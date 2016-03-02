@@ -62,3 +62,16 @@ repo.Pull()
 
 repo.Log()
 ```
+
+Extract data
+------------
+
+```go
+import "github.com/s3git/s3git-go"
+
+repo, _ := s3git.OpenRepository(".")
+
+r, _ := repo.Get("012345678")
+
+io.Copy(os.Stdout, r)
+```
