@@ -7,6 +7,25 @@ import (
 const stageDir = ".stage"
 const cacheDir = ".cache"
 
+const BLOB = "blob"
+
+var (
+	//
+	// With the additional constraint that objects are a multiple of 64 in size, this
+	// adds 6 bits to the chance of getting a regular blob in the range, see table:
+	//
+	// PREFIX-SIZE | NR BITS | OCCURRENCE (MLD)
+	//           5 |    20+6 |             0.1
+	//           6 |    24+6 |             1.1
+	//           7 |    28+6 |            17.2
+	//           8 |    32+6 |             275
+	//
+	prefixChar  = '0'
+	prefixNum   = 7
+	prefixCheat = 3		// Number that is cheated in the prefix, like 0000xxx00000 -- will fail in file check mode
+)
+
+
 // Size of the CAS keys in bytes.
 const KeySize = 64
 const KeySizeHex = KeySize*2

@@ -39,3 +39,38 @@ func getBlobPath(hash string) string {
 func getBlobPathWithinArea(hash, area string) string {
 	return path.Join(config.Config.LdCasPath, area, hash[0:2], hash[2:4], hash[4:])
 }
+
+// Move underlying chunks for a hash from .stage area to .cache area
+func moveBlobToCache(hash string) error {
+
+	leaves, err := openRoot(hash)
+	if err != nil {
+		return err
+	}
+
+	for _, l := range leaves {
+		leaveHash := l.String()
+
+		oldPath := getBlobPathWithinArea(leaveHash, stageDir)
+		if _, err := os.Stat(oldPath); os.IsNotExist(err) {
+			return err
+		}
+
+		hashDir := path.Join(config.Config.LdCasPath, cacheDir, leaveHash[0:2], leaveHash[2:4]) + "/"
+		err := os.MkdirAll(hashDir, 0777)
+		if err != nil {
+			return err
+		}
+		newPath := hashDir + leaveHash[4:]
+
+		err = os.Rename(oldPath, newPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	// TODO: Consider removing directories that are left empty in the .stage area
+	//   However be aware of files moving in at potentially the same time (in a seperate process)
+	//   Maybe do in separate maintenance step???
+	return nil
+}

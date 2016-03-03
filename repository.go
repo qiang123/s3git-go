@@ -2,7 +2,6 @@ package s3git
 
 import (
 	"io"
-	"os"
 	"encoding/hex"
 	"time"
 	"errors"
@@ -112,36 +111,28 @@ func (repo Repository) List(prefix string) (<-chan string, error) {
 }
 
 // Add a stream to the repository
-func (repo Repository) Add(r io.Reader) (string, error) {
+func (repo Repository) Add(r io.Reader) (string, bool, error) {
 
-	io.Copy(os.Stdout, r)
+	cw := cas.MakeWriter(cas.BLOB)
+	defer cw.Close()
 
-/*	cw := cas.MakeWriter(cas.BLOB)
-
-	_, err := buf.WriteTo(cw)
+	_, err := io.Copy(cw, r)
 	if err != nil {
-		return "", nil
+		return "", false, nil
 	}
 
 	rootKeyStr, _ ,newBlob, err := cw.Flush()
 	if err != nil {
-		return "", nil
+		return "", false, nil
 	}
-	//	cw.Close()
 
 	// Check whether object is not already in repository
 	if newBlob {
 		// Add root key stage
 		kv.AddToStage(rootKeyStr)
-
-		fmt.Println("Added:", rootKeyStr)
-	} else {
-		fmt.Println("Already in repo:", rootKeyStr)
 	}
 
-	return rootKeyStr, err
-*/
-	return "", nil
+	return rootKeyStr, newBlob, err
 }
 
 // Get a stream from the repository
