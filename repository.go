@@ -19,6 +19,8 @@ type Repository struct {
 // Initialize a new repository
 func InitRepository(path string) (*Repository, error) {
 
+	config.SaveConfig(path)
+
 	return &Repository{}, nil
 }
 
