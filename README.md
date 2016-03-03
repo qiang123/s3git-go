@@ -26,7 +26,7 @@ Clone a repository
 ```go
 import "github.com/s3git/s3git-go"
 
-repo, _ := s3git.Clone("s3://s3git-100m")
+repo, _ := s3git.Clone("s3://s3git-100m", ".")
 
 for elem := range repo.List("123456") {
     fmt.Println(elem)
@@ -74,4 +74,14 @@ repo, _ := s3git.OpenRepository(".")
 r, _ := repo.Get("012345678")
 
 io.Copy(os.Stdout, r)
+```
+
+Clone a repository with progress
+--------------------------------
+
+```go
+import "github.com/s3git/s3git-go"
+
+repo, _ := s3git.Clone("s3://s3git-100m", ".")
+
 ```
