@@ -5,7 +5,7 @@ import (
 	"os"
 	"errors"
 	"io/ioutil"
-	"github.com/fwessels/s3git-go/kv"
+	"github.com/s3git/s3git-go/kv"
 	"encoding/hex"
 )
 

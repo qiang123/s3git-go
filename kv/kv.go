@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"github.com/fwessels/s3git-go/config"
+	"github.com/s3git/s3git-go/config"
 	mdb "github.com/szferi/gomdb"
 	"encoding/hex"
 )

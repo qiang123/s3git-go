@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"time"
 	"errors"
-	"github.com/fwessels/s3git-go/cas"
-	"github.com/fwessels/s3git-go/config"
-	"github.com/fwessels/s3git-go/kv"
+	"github.com/s3git/s3git-go/cas"
+	"github.com/s3git/s3git-go/config"
+	"github.com/s3git/s3git-go/kv"
 	"bytes"
 )
 

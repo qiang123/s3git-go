@@ -3,6 +3,7 @@ package s3git
 import (
 	"errors"
 )
+
 // Get the full size unique hash for a given prefix.
 // Return error in case none or multiple candidates are found
 func (repo Repository) MakeUnique(prefix string) (string, error) {
