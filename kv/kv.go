@@ -95,36 +95,20 @@ func ListStage() (<-chan []byte, error) {
 	return listMdb(&dbiStage, "")
 }
 
-//func ListStageAsStrings() ([]string, error) {
-//
-//	stat, _ := env.Stat()
-//	keys, err := listMdb(&dbiStage, "", stat.Entries, -1)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	list := make([]string, 0, len(keys))
-//	for _, key := range keys {
-//		list = append(list, hex.EncodeToString(key))
-//	}
-//
-//	return list, nil
-//}
+func ListLevel1Commits() (<-chan []byte, error) {
 
-//func ListLevel1Commits() ([][]byte, error) {
-//
-//	return listMdb(&dbiLevel1Commits, "", 16, -1)
-//}
-//
-//func ListLevel1Prefixes() ([][]byte, error) {
-//
-//	return listMdb(&dbiLevel1Prefixes, "", 16, -1)
-//}
-//
-//func ListLevel1Trees() ([][]byte, error) {
-//
-//	return listMdb(&dbiLevel1Trees, "", 16, -1)
-//}
+	return listMdb(&dbiLevel1Commits, "")
+}
+
+func ListLevel1Prefixes() (<-chan []byte, error) {
+
+	return listMdb(&dbiLevel1Prefixes, "")
+}
+
+func ListLevel1Trees() (<-chan []byte, error) {
+
+	return listMdb(&dbiLevel1Trees, "")
+}
 
 func ListLevel1Blobs(query string) (<-chan []byte, error) {
 

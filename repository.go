@@ -68,9 +68,16 @@ func (repo Repository) Status() (<-chan string, error) {
 	result := make(chan string)
 
 	go func() {
-		result <- "123456"
-		result <- "234567"
-		close(result)
+		defer close(result)
+
+		list, err := kv.ListStage()
+		if err != nil {
+			return
+		}
+
+		for l := range list {
+			result <- hex.EncodeToString(l)
+		}
 	}()
 
 	return result, nil
