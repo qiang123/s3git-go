@@ -37,7 +37,7 @@ func getBlobPath(hash string) string {
 
 // Get the filepath for a given hash in either the .stage or .cache area
 func getBlobPathWithinArea(hash, area string) string {
-	return path.Join(config.Config.LdCasPath, area, hash[0:2], hash[2:4], hash[4:])
+	return path.Join(config.Config.S3gitCasPath, area, hash[0:2], hash[2:4], hash[4:])
 }
 
 // Move underlying chunks for a hash from .stage area to .cache area
@@ -56,8 +56,8 @@ func moveBlobToCache(hash string) error {
 			return err
 		}
 
-		hashDir := path.Join(config.Config.LdCasPath, cacheDir, leaveHash[0:2], leaveHash[2:4]) + "/"
-		err := os.MkdirAll(hashDir, 0777)
+		hashDir := path.Join(config.Config.S3gitCasPath, cacheDir, leaveHash[0:2], leaveHash[2:4]) + "/"
+		err := os.MkdirAll(hashDir, os.ModePerm)
 		if err != nil {
 			return err
 		}

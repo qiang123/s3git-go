@@ -31,7 +31,7 @@ var dbiStage mdb.DBI
 
 func OpenDatabase() error {
 
-	mdbDir := path.Join(config.Config.LdCasPath, ".mdb")
+	mdbDir := path.Join(config.Config.S3gitCasPath, ".mdb")
 	err := os.MkdirAll(mdbDir, 0777)
 	if err != nil {
 		return err

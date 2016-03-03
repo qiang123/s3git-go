@@ -8,30 +8,30 @@ import (
 	"strings"
 )
 
-const LIFEDRIVE_CONFIG = ".lifedrive.config"
+const S3GIT_CONFIG = ".s3git.config"
 const CONFIG = "config"
 
 var Config ConfigObject
 
 type ConfigObject struct {
-	LdVersion     int    `json:"ldVersion"`
-	LdType        string `json:"ldType"` // config
+	S3gitVersion     int    `json:"s3gitVersion"`
+	S3gitType        string `json:"s3gitType"` // config
 
-	LdCasPath	  string `json:"ldCasPath"`
+	S3gitCasPath	 string `json:"s3gitCasPath"`
 
-	LdS3Bucket    string `json:"ldS3Bucket"`
-	LdS3Region    string `json:"ldS3Region"`
-	LdS3AccessKey string `json:"ldS3AccessKey"`
-	LdS3SecretKey string `json:"ldS3SecretKey"`
+	S3gitS3Bucket    string `json:"s3gitS3Bucket"`
+	S3gitS3Region    string `json:"s3gitS3Region"`
+	S3gitS3AccessKey string `json:"s3gitS3AccessKey"`
+	S3gitS3SecretKey string `json:"s3gitS3SecretKey"`
 
-	LdMinioEndpoint string `json:"ldMinioEndpoint"`
-	LdMinioInsecure bool   `json:"ldMinioInsecure"`
+	S3gitMinioEndpoint string `json:"s3gitMinioEndpoint"`
+	S3gitMinioInsecure bool   `json:"s3gitMinioInsecure"`
 
-	LdAcdRefreshToken string `json:"ldAcdRefreshToken"`
+	S3gitAcdRefreshToken string `json:"s3gitAcdRefreshToken"`
 }
 
 func getConfigFile(dir string) string {
-	return dir + "/" + LIFEDRIVE_CONFIG
+	return dir + "/" + S3GIT_CONFIG
 }
 
 func LoadConfig(dir string) (bool, error) {
@@ -52,8 +52,8 @@ func LoadConfig(dir string) (bool, error) {
 
 func SaveConfig(dir string) error {
 
-	configObject := ConfigObject{LdVersion: 1, LdType: CONFIG, LdCasPath:dir,
-    	LdS3Bucket: "test", LdS3Region: "us-east-1", LdS3AccessKey: "ACCESSKEY", LdS3SecretKey: "SECRETKEY", LdMinioEndpoint: "localhost:9000", LdMinioInsecure: true }
+	configObject := ConfigObject{S3gitVersion: 1, S3gitType: CONFIG, S3gitCasPath:dir,
+		S3gitS3Bucket: "test", S3gitS3Region: "us-east-1", S3gitS3AccessKey: "ACCESSKEY", S3gitS3SecretKey: "SECRETKEY", S3gitMinioEndpoint: "localhost:9000", S3gitMinioInsecure: true }
 
 	buf := new(bytes.Buffer)
 
