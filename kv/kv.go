@@ -78,12 +78,16 @@ func AddToStage(key string) error {
 	return nil
 }
 
-func RemoveFromStage(keys []string) error {
+func ClearStage() error {
+
+	list, err := listMdb(&dbiStage, "")
+	if err != nil {
+		return err
+	}
 
 	txn, _ := env.BeginTxn(nil, 0)
-	for _, k := range keys {
-		b, _ := hex.DecodeString(k)
-		txn.Del(dbiStage, b, nil)
+	for k := range list {
+		txn.Del(dbiStage, k, nil)
 	}
 	txn.Commit()
 
