@@ -15,7 +15,7 @@ repo.Add()
 
 repo.Commit("Initial commit")
 
-reop.List()
+repo.List()
 
 repo.Log()
 ```
