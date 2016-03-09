@@ -83,19 +83,6 @@ func (repo Repository) Status() (<-chan string, error) {
 	return result, nil
 }
 
-// List the commits for a repository
-func (repo Repository) ListCommits() (<-chan Commit, error) {
-
-	result := make(chan Commit)
-
-	go func() {
-		result <- Commit{Hash:"1111112345", Message:"Second commit"}
-		result <- Commit{Hash:"1111113456", Message:"Initial commit"}
-		close(result)
-	}()
-
-	return result, nil
-}
 
 // List the contents of a repository
 func (repo Repository) List(prefix string) (<-chan string, error) {
