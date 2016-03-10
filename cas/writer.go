@@ -2,9 +2,9 @@ package cas
 
 import (
 	"os"
-	"fmt"
 	"github.com/codahale/blake2"
 	"path"
+	"errors"
 	"strings"
 	"github.com/s3git/s3git-go/config"
 	"github.com/s3git/s3git-go/kv"
@@ -32,6 +32,7 @@ type Writer struct {
 	chunkOffset int
 	objType     string
 	areaDir		string
+	flushed		bool
 }
 
 func (cw *Writer) Write(p []byte) (nn int, err error) {
@@ -84,6 +85,8 @@ func (cw *Writer) Flush() (string, []byte, bool, error) {
 	// Close last node
 	cw.flush(true)
 
+	cw.flushed = true
+
 	// Compute hash of level 1 root key
 	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
 
@@ -123,7 +126,9 @@ func (cw *Writer) Flush() (string, []byte, bool, error) {
 }
 
 func (cw *Writer) Close() error {
-	fmt.Println("cas.Writer.Close() -- not yet implemented")
+	if !cw.flushed {
+		return errors.New("Stream closed without being flushed!")
+	}
 	return nil
 }
 
