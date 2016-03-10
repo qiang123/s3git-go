@@ -2,8 +2,8 @@ package s3git
 
 import (
 	"encoding/hex"
-	"github.com/s3git/s3git-go/core"
-	"github.com/s3git/s3git-go/kv"
+	"github.com/s3git/s3git-go/internal/core"
+	"github.com/s3git/s3git-go/internal/kv"
 )
 
 type Commit struct {

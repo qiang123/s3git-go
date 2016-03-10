@@ -6,8 +6,8 @@ import (
 	"path"
 	"errors"
 	"strings"
-	"github.com/s3git/s3git-go/config"
-	"github.com/s3git/s3git-go/kv"
+	"github.com/s3git/s3git-go/internal/config"
+	"github.com/s3git/s3git-go/internal/kv"
 	"encoding/hex"
 	mdb "github.com/szferi/gomdb"
 )

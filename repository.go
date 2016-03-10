@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/s3git/s3git-go/cas"
-	"github.com/s3git/s3git-go/config"
-	"github.com/s3git/s3git-go/kv"
+	"github.com/s3git/s3git-go/internal/cas"
+	"github.com/s3git/s3git-go/internal/config"
+	"github.com/s3git/s3git-go/internal/kv"
 	"io"
 	"time"
 )

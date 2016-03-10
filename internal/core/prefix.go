@@ -9,7 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/s3git/s3git-go/cas"
+	"github.com/s3git/s3git-go/internal/cas"
 	"github.com/codahale/blake2"
 	"strings"
 	"runtime"

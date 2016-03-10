@@ -3,7 +3,7 @@ package cas
 import (
 	"os"
 	"path"
-	"github.com/s3git/s3git-go/config"
+	"github.com/s3git/s3git-go/internal/config"
 )
 
 // Upon writing, make sure the size of the repository does not exceed the max local size,

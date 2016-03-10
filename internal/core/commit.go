@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/s3git/s3git-go/cas"
+	"github.com/s3git/s3git-go/internal/cas"
 	"io"
 	"strings"
 	"time"
-	"github.com/s3git/s3git-go/kv"
+	"github.com/s3git/s3git-go/internal/kv"
 )
 
 const COMMIT = "commit"

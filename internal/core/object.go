@@ -3,7 +3,7 @@ package core
 import (
 	"bytes"
 	"fmt"
-	"github.com/s3git/s3git-go/cas"
+	"github.com/s3git/s3git-go/internal/cas"
 	"strings"
 )
 
