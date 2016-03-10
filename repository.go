@@ -65,15 +65,15 @@ func Clone(url, path string, progressDownloading, progressProcessing func(maxTic
 // Get the list of changes for a repository
 func (repo Repository) Status() (<-chan string, error) {
 
+	list, err := kv.ListStage()
+	if err != nil {
+		return nil, err
+	}
+
 	result := make(chan string)
 
 	go func() {
 		defer close(result)
-
-		list, err := kv.ListStage()
-		if err != nil {
-			return
-		}
 
 		for l := range list {
 			result <- hex.EncodeToString(l)
