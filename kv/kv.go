@@ -28,6 +28,8 @@ var dbiLevel1Trees mdb.DBI
 // KV database containing overview of added/removed blobs in stage
 var dbiStage mdb.DBI
 
+// KV database top most commits (may be more than one or zero initially)
+var dbiTopMostCommits mdb.DBI
 
 func OpenDatabase() error {
 
@@ -47,6 +49,10 @@ func OpenDatabase() error {
 	// overview of blobs in stage
 	dbstage := "stage"
 	dbiStage, _ = txn.DBIOpen(&dbstage, mdb.CREATE)
+
+	// list of top most commits
+	dbtopMostCommits := "topmostcommits"
+	dbiTopMostCommits, _ = txn.DBIOpen(&dbtopMostCommits, mdb.CREATE)
 
 	// Level 1 databases
 	dbl1blobs := "l1blobs"
@@ -69,10 +75,10 @@ func OpenDatabase() error {
 
 func AddToStage(key string) error {
 
-	hex, _ := hex.DecodeString(key)
+	hx, _ := hex.DecodeString(key)
 
 	txn, _ := env.BeginTxn(nil, 0)
-	txn.Put(dbiStage, hex, nil, 0)
+	txn.Put(dbiStage, hx, nil, 0)
 	txn.Commit()
 
 	return nil
@@ -97,6 +103,33 @@ func ClearStage() error {
 func ListStage() (<-chan []byte, error) {
 
 	return listMdb(&dbiStage, "")
+}
+
+func AddTopMostCommit(key string) error {
+
+	hx, _ := hex.DecodeString(key)
+
+	txn, _ := env.BeginTxn(nil, 0)
+	txn.Put(dbiTopMostCommits, hx, nil, 0)
+	txn.Commit()
+
+	return nil
+}
+
+func RemoveTopMostCommit(key string) error {
+
+	hx, _ := hex.DecodeString(key)
+
+	txn, _ := env.BeginTxn(nil, 0)
+	txn.Del(dbiTopMostCommits, hx, nil)
+	txn.Commit()
+
+	return nil
+}
+
+func ListTopMostCommits() (<-chan []byte, error) {
+
+	return listMdb(&dbiTopMostCommits, "")
 }
 
 func ListLevel1Commits() (<-chan []byte, error) {
@@ -255,7 +288,7 @@ func listMdb(dbi *mdb.DBI, query string) (<-chan []byte, error) {
 
 			}
 
-			// break early is start of key is not longer
+			// break early if start of key is not longer
 			if hex.EncodeToString(bkey)[:len(query)] != query {
 				break
 			}
