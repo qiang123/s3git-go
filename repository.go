@@ -1,18 +1,17 @@
 package s3git
 
 import (
-	"io"
+	"bytes"
 	"encoding/hex"
-	"time"
 	"errors"
 	"github.com/s3git/s3git-go/cas"
 	"github.com/s3git/s3git-go/config"
 	"github.com/s3git/s3git-go/kv"
-	"bytes"
+	"io"
+	"time"
 )
 
 type Repository struct {
-
 	Remotes []Remote
 }
 
@@ -21,7 +20,7 @@ func InitRepository(path string) (*Repository, error) {
 
 	config.SaveConfig(path)
 
-	return &Repository{}, nil
+	return OpenRepository(path)
 }
 
 // Open an existing repository
@@ -83,7 +82,6 @@ func (repo Repository) Status() (<-chan string, error) {
 	return result, nil
 }
 
-
 // List the contents of a repository
 func (repo Repository) List(prefix string) (<-chan string, error) {
 
@@ -117,7 +115,7 @@ func (repo Repository) Add(r io.Reader) (string, bool, error) {
 		return "", false, nil
 	}
 
-	rootKeyStr, _ ,newBlob, err := cw.Flush()
+	rootKeyStr, _, newBlob, err := cw.Flush()
 	if err != nil {
 		return "", false, nil
 	}
