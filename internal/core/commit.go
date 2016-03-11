@@ -32,9 +32,10 @@ type commitObject struct {
 	S3gitPadding     string   `json:"s3gitPadding"`
 }
 
-func makeCommitObject(message, tree string, parents []string) *commitObject {
+func makeCommitObject(message, branch, tree string, warmParents, coldParents []string) *commitObject {
 
-	co := commitObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: COMMIT}, S3gitMessage: message, S3gitTree: tree, S3gitWarmParents: parents}
+	co := commitObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: COMMIT}, S3gitMessage: message, S3gitBranch: branch,
+		S3gitTree: tree, S3gitWarmParents: warmParents, S3gitColdParents: coldParents}
 
 	// TODO: Read from git config
 	// TODO: brackets are translated to \u003c respectively \u003e
@@ -78,7 +79,7 @@ func GetCommitObject(hash string) (*commitObject, error) {
 	return &co, nil
 }
 
-func StoreCommitObject(message string, parents []string, added <-chan []byte, removed []string) (hash string, empty bool, err error) {
+func StoreCommitObject(message, branch string, warmParents, coldParents []string, added <-chan []byte, removed []string) (hash string, empty bool, err error) {
 
 	// Create a tree object for this commit
 	treeObject := makeTreeObject(added, removed)
@@ -92,7 +93,7 @@ func StoreCommitObject(message string, parents []string, added <-chan []byte, re
 	}
 
 	// Create commit object
-	commitObject := makeCommitObject(message, treeHash, parents)
+	commitObject := makeCommitObject(message, branch, treeHash, warmParents, coldParents)
 
 	buf := new(bytes.Buffer)
 
@@ -105,7 +106,10 @@ func StoreCommitObject(message string, parents []string, added <-chan []byte, re
 	h, e := commitObject.write(buf, COMMIT)
 
 	// Remove previous parent commits
-	for _, parentCommit := range parents {
+	for _, parentCommit := range warmParents {
+		kv.RemoveTopMostCommit(parentCommit)
+	}
+	for _, parentCommit := range coldParents {
 		kv.RemoveTopMostCommit(parentCommit)
 	}
 
