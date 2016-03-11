@@ -5,5 +5,4 @@ import (
 )
 
 type Remote struct {
-
 }
