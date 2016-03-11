@@ -52,8 +52,13 @@ func LoadConfig(dir string) (bool, error) {
 
 func SaveConfig(dir string) error {
 
+	bucket := getDefaultValue("test", "S3GIT_S3_BUCKET")
+	region := getDefaultValue("us-east-1", "S3GIT_S3_REGION")
+	accessKey := getDefaultValue("", "S3GIT_S3_ACCESS_KEY")
+	secretKey := getDefaultValue("", "S3GIT_S3_SECRET_KEY")
+
 	configObject := ConfigObject{S3gitVersion: 1, S3gitType: CONFIG, S3gitCasPath:dir,
-		S3gitS3Bucket: "test", S3gitS3Region: "us-east-1", S3gitS3AccessKey: "ACCESSKEY", S3gitS3SecretKey: "SECRETKEY", S3gitMinioEndpoint: "localhost:9000", S3gitMinioInsecure: true }
+		S3gitS3Bucket: bucket, S3gitS3Region: region, S3gitS3AccessKey: accessKey, S3gitS3SecretKey: secretKey, S3gitMinioEndpoint: "localhost:9000", S3gitMinioInsecure: true }
 
 	buf := new(bytes.Buffer)
 
@@ -68,4 +73,15 @@ func SaveConfig(dir string) error {
 	}
 
 	return nil
+}
+
+func getDefaultValue(def, envName string) string {
+
+	val := def
+
+	envVal := os.Getenv(envName)
+	if envVal != "" {
+		val = envVal
+	}
+	return val
 }
