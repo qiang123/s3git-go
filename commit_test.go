@@ -83,8 +83,7 @@ func TestListThreeCommits(t *testing.T) {
 
 func TestForkedCommitsJoiningBoth(t *testing.T) {
 	repo, path := setupRepo()
-	fmt.Println(path)
-	//defer teardownRepo(path)
+	defer teardownRepo(path)
 
 	repo.Add(strings.NewReader("hello s3git"))
 	repo.Commit("1st commit")
@@ -128,8 +127,7 @@ func TestForkedCommitsJoiningBoth(t *testing.T) {
 
 func TestForkedCommitsJoiningWithOneCold(t *testing.T) {
 	repo, path := setupRepo()
-	fmt.Println(path)
-	//defer teardownRepo(path)
+	defer teardownRepo(path)
 
 	repo.Add(strings.NewReader("hello s3git"))
 	repo.Commit("1st commit")
@@ -173,8 +171,7 @@ func TestForkedCommitsJoiningWithOneCold(t *testing.T) {
 
 func TestForkedCommitsSplit(t *testing.T) {
 	repo, path := setupRepo()
-	fmt.Println(path)
-	//defer teardownRepo(path)
+	defer teardownRepo(path)
 
 	repo.Add(strings.NewReader("hello s3git"))
 	repo.Commit("1st commit")
@@ -193,7 +190,6 @@ func TestForkedCommitsSplit(t *testing.T) {
 
 	count := 0
 	for l := range list {
-		fmt.Println(l.Message)
 		if count == 0 {
 			assert.Equal(t, "forked at 2nd commit", l.Message, "4th commit message is not correct")
 		} else if count == 1 {
