@@ -3,10 +3,6 @@ package core
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/s3git/s3git-go/internal/cas"
-	"io"
 	"strings"
 	"time"
 	"github.com/s3git/s3git-go/internal/kv"
@@ -61,14 +57,10 @@ func isCommit(hash string) bool {
 // Return commit object based on hash
 func GetCommitObject(hash string) (*commitObject, error) {
 
-	cr := cas.MakeReader(hash)
-	if cr == nil {
-		return nil, errors.New(fmt.Sprint("Failed to read hash %s", hash))
+	s, err := readBlob(hash)
+	if err != nil {
+		return nil, err
 	}
-
-	buf := bytes.NewBuffer(nil)
-	io.Copy(buf, cr)
-	s := string(buf.Bytes())
 
 	dec := json.NewDecoder(strings.NewReader(s))
 	var co commitObject

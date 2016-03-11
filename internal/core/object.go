@@ -2,9 +2,11 @@ package core
 
 import (
 	"bytes"
+	"io"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/cas"
 	"strings"
+	"errors"
 )
 
 type coreObject struct {
@@ -28,4 +30,16 @@ func (co *coreObject) write(buf *bytes.Buffer, objType string) (string, error) {
 	hash, _, _, err := cw.Flush()
 
 	return hash, err
+}
+
+func readBlob(hash string) (string, error) {
+
+	cr := cas.MakeReader(hash)
+	if cr == nil {
+		return "", errors.New(fmt.Sprint("Failed to read hash %s", hash))
+	}
+
+	buf := bytes.NewBuffer(nil)
+	io.Copy(buf, cr)
+	return string(buf.Bytes()), nil
 }
