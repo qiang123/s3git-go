@@ -41,7 +41,7 @@ func getBlobPathWithinArea(hash, area string) string {
 }
 
 // Move underlying chunks for a hash from .stage area to .cache area
-func moveBlobToCache(hash string) error {
+func MoveBlobToCache(hash string) error {
 
 	leaves, err := openRoot(hash)
 	if err != nil {
