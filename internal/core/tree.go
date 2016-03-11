@@ -1,10 +1,15 @@
 package core
 
 import (
+	"io"
 	"bytes"
+	"errors"
+	"fmt"
 	"encoding/json"
 	"sort"
+	"strings"
 	"encoding/hex"
+	"github.com/s3git/s3git-go/internal/cas"
 )
 
 const TREE="tree"
@@ -48,4 +53,43 @@ func (to *treeObject) writeToDisk() (string, error) {
 	}
 
 	return to.write(buf, TREE)
+}
+
+// Return tree object based on hash
+func GetTreeObject(hash string) (*treeObject, error) {
+
+	cr := cas.MakeReader(hash)
+	if cr == nil {
+		return nil, errors.New(fmt.Sprint("Failed to read hash %s", hash))
+	}
+
+	buf := bytes.NewBuffer(nil)
+	// TODO: Find out why io.Copy does not read whole file from cas (truncated for 50 MB tree files)
+	// io.Copy(buf, cr)
+
+	size := 0
+	array := make([]byte, cas.ChunkSize)
+	for {
+		read, err := cr.Read(array)
+		size += read
+		if read > 0 {
+			_, err := buf.Write(array[:read])
+			if err != nil {
+				panic(err)
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+	}
+
+	s := string(buf.Bytes())
+
+	dec := json.NewDecoder(strings.NewReader(s))
+	var to treeObject
+	if err := dec.Decode(&to); err != nil {
+		return nil, err
+	}
+
+	return &to, nil
 }
