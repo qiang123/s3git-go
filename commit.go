@@ -97,17 +97,23 @@ func (repo Repository) commitWithWarmAndColdParents(message, branch string, warm
 }
 
 // List the commits for a repository
-func (repo Repository) ListCommits() (<-chan Commit, error) {
+func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 
+	// TODO: Implement support for branches
 	commits, err := kv.ListTopMostCommits()
 	if err != nil {
 		return nil, err
 	}
 
-	var commit string
-	// TODO: Deal with multiple top most commits
+	inputs := []Commit{}
+
 	for c := range commits {
-		commit = hex.EncodeToString(c)
+		commit := hex.EncodeToString(c)
+		start, _, err := getCommit(commit)
+		if err != nil {
+			return nil, err
+		}
+		inputs = append(inputs, *start)
 	}
 
 	result := make(chan Commit)
@@ -116,20 +122,75 @@ func (repo Repository) ListCommits() (<-chan Commit, error) {
 		defer close(result)
 
 		for {
-			co, err := core.GetCommitObject(commit)
-			if err != nil {
-				return
-			}
-			result <- Commit{Hash: commit, Message: co.S3gitMessage}
+			if len(inputs) == 1 {
+				result <- inputs[0]
+				input, done, err := getCommit(inputs[0].Parent)
+				if err != nil {
+					return
+				} else if done {
+					return // no more new parent --> we are done
+				}
+				inputs[0] = *input
+			} else if len(inputs) == 2 {
+				t1, _ := time.Parse(time.RFC3339Nano, inputs[0].TimeStamp)
+				t2, _ := time.Parse(time.RFC3339Nano, inputs[1].TimeStamp)
 
-			if len(co.S3gitWarmParents) == 0 {
-				break
-			} else {
-				// TODO: Deal with commits after first one
-				commit = co.S3gitWarmParents[0]
+				if inputs[0].Hash == inputs[1].Hash {
+					// Same commit object so discard second instance
+					pos := 0
+					inputs = append(inputs[0:pos], inputs[pos+1:len(inputs)]...)
+					result <- inputs[pos]
+
+					input, done, err := getCommit(inputs[pos].Parent)
+					if err != nil {
+						return
+					} else if done {
+						return // no more new parent --> we are done
+					}
+					inputs[pos] = *input
+
+				} else if t1.After(t2) {
+					result <- inputs[0]
+
+					input, done, err := getCommit(inputs[0].Parent)
+					if err != nil {
+						return
+					} else if done {
+						return // no more new parent --> we are done
+					}
+					inputs[0] = *input
+				} else {
+					result <- inputs[1]
+
+					input, done, err := getCommit(inputs[1].Parent)
+					if err != nil {
+						return
+					} else if done {
+						return // no more new parent --> we are done
+					}
+					inputs[1] = *input
+				}
 			}
 		}
 	}()
 
 	return result, nil
+}
+
+func getCommit(commit string) (*Commit, bool, error) {
+	if commit == "" {
+		return nil, true, nil	// we are done
+	}
+	co, err := core.GetCommitObject(commit)
+	if err != nil {
+		return nil, false,  err
+	}
+	result := Commit{Hash: commit, Message: co.S3gitMessage, TimeStamp: co.S3gitTimeStamp}
+	if len(co.S3gitWarmParents) == 1 {
+		result.Parent = co.S3gitWarmParents[0]
+	} else if len(co.S3gitWarmParents) > 1 {
+		// TODO: Add other parents to inputs
+		result.Parent = co.S3gitWarmParents[0]
+	}
+	return &result, false, err
 }
