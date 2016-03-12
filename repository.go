@@ -163,9 +163,3 @@ func (repo Repository) Get(hash string) (io.Reader, error) {
 
 	return r, nil
 }
-
-// Pull updates for the repository
-func (repo Repository) Pull(progress func(maxTicks int64)) error {
-
-	return nil
-}
