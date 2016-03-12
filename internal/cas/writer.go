@@ -13,7 +13,7 @@ import (
 )
 
 func MakeWriter(objType string) *Writer {
-	cw := Writer{areaDir: stageDir, objType: objType}
+	cw := Writer{areaDir: StageDir, objType: objType}
 	cw.chunkBuf = make([]byte, ChunkSize)
 	return &cw
 }
@@ -33,6 +33,10 @@ type Writer struct {
 	objType     string
 	areaDir		string
 	flushed		bool
+}
+
+func (cw *Writer) SetAreaDir(dir string) {
+	cw.areaDir = dir
 }
 
 func (cw *Writer) Write(p []byte) (nn int, err error) {

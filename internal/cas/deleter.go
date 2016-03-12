@@ -7,7 +7,7 @@ import (
 )
 
 // Delete the chunks for a given blob
-func deleteChunksForBlob(hash string) error {
+func DeleteChunksForBlob(hash string) error {
 
 	key, _ := hex.DecodeString(hash)
 	leafHashes, _, err := kv.GetLevel1(key)
@@ -19,7 +19,7 @@ func deleteChunksForBlob(hash string) error {
 		leafKey := hex.EncodeToString(leafHashes[i : i+KeySize])
 
 		// Test if available in cache directory
-		nameInCache := getBlobPathWithinArea(leafKey, cacheDir)
+		nameInCache := getBlobPathWithinArea(leafKey, CacheDir)
 		if _, err := os.Stat(nameInCache); err == nil {
 			if err := os.Remove(nameInCache); err != nil {
 				return err

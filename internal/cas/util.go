@@ -16,13 +16,13 @@ func checkRepoSize() {
 func getBlobPath(hash string) string {
 
 	// Check if in stage directory
-	nameInStage := getBlobPathWithinArea(hash, stageDir)
+	nameInStage := getBlobPathWithinArea(hash, StageDir)
 	if _, err := os.Stat(nameInStage); err == nil {
 		return nameInStage
 	}
 
 	// Check if in cache directory
-	nameInCache := getBlobPathWithinArea(hash, cacheDir)
+	nameInCache := getBlobPathWithinArea(hash, CacheDir)
 	if _, err := os.Stat(nameInCache); err == nil {
 		return nameInCache
 	}
@@ -51,12 +51,12 @@ func MoveBlobToCache(hash string) error {
 	for _, l := range leaves {
 		leaveHash := l.String()
 
-		oldPath := getBlobPathWithinArea(leaveHash, stageDir)
+		oldPath := getBlobPathWithinArea(leaveHash, StageDir)
 		if _, err := os.Stat(oldPath); os.IsNotExist(err) {
 			return err
 		}
 
-		hashDir := path.Join(config.Config.S3gitCasPath, cacheDir, leaveHash[0:2], leaveHash[2:4]) + "/"
+		hashDir := path.Join(config.Config.S3gitCasPath, CacheDir, leaveHash[0:2], leaveHash[2:4]) + "/"
 		err := os.MkdirAll(hashDir, os.ModePerm)
 		if err != nil {
 			return err
