@@ -10,13 +10,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/cas"
+	"github.com/s3git/s3git-go/internal/kv"
 	"github.com/codahale/blake2"
 	"strings"
 	"runtime"
 	"errors"
 )
-
-const PREFIX = "prefix"
 
 type prefixObject struct {
 	coreObject
@@ -25,7 +24,7 @@ type prefixObject struct {
 }
 
 func makePrefixObject(followMeHash string) *prefixObject {
-	po := prefixObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: PREFIX}, S3gitFollowMe: followMeHash}
+	po := prefixObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: kv.PREFIX}, S3gitFollowMe: followMeHash}
 	return &po
 }
 
@@ -81,7 +80,7 @@ func StorePrefixObject(commitHash string) error {
 	}
 
 	// And save prefix object to disk
-	cw := cas.MakeWriterInCheatMode(PREFIX)
+	cw := cas.MakeWriterInCheatMode(kv.PREFIX)
 	fmt.Fprint(cw, prefixJson)
 
 	// Flush the stream (and ignore hash)

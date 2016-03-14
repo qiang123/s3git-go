@@ -10,9 +10,8 @@ import (
 	"strings"
 	"encoding/hex"
 	"github.com/s3git/s3git-go/internal/cas"
+	"github.com/s3git/s3git-go/internal/kv"
 )
-
-const TREE="tree"
 
 type treeObject struct {
 	coreObject
@@ -22,7 +21,7 @@ type treeObject struct {
 }
 
 func makeTreeObject(added <-chan []byte, removed []string) *treeObject {
-	to := treeObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: TREE}}
+	to := treeObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: kv.TREE}}
 
 	addedArray := []string{}
 
@@ -52,7 +51,7 @@ func (to *treeObject) writeToDisk() (string, error) {
 		return "", err
 	}
 
-	return to.write(buf, TREE)
+	return to.write(buf, kv.TREE)
 }
 
 // Return tree object based on hash

@@ -10,8 +10,6 @@ import (
 	"errors"
 )
 
-const COMMIT = "commit"
-
 // Type to create a commit object
 // - total size of json object is always a multiple of 64, so we are padding the object
 // - structured as a json object
@@ -33,7 +31,7 @@ type commitObject struct {
 
 func makeCommitObject(message, branch, tree string, warmParents, coldParents []string, name, email string) *commitObject {
 
-	co := commitObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: COMMIT}, S3gitMessage: message, S3gitBranch: branch,
+	co := commitObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: kv.COMMIT}, S3gitMessage: message, S3gitBranch: branch,
 		S3gitTree: tree, S3gitWarmParents: warmParents, S3gitColdParents: coldParents}
 
 	co.S3gitCommitterName = name
@@ -126,7 +124,7 @@ func StoreCommitObject(message, branch string, warmParents, coldParents []string
 	}
 
 	// Write to disk
-	h, e := commitObject.write(buf, COMMIT)
+	h, e := commitObject.write(buf, kv.COMMIT)
 
 	err = commitObject.MarkWarmAndColdParents()
 	if err != nil {

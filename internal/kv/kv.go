@@ -1,12 +1,12 @@
 package kv
 
 import (
+	"encoding/hex"
 	"fmt"
-	"os"
-	"path"
 	"github.com/s3git/s3git-go/internal/config"
 	mdb "github.com/szferi/gomdb"
-	"encoding/hex"
+	"os"
+	"path"
 )
 
 var env *mdb.Env
@@ -43,7 +43,7 @@ func OpenDatabase() error {
 	// TODO: Figure out proper size for lmdb
 	// TODO: Windows: max size is capped at 32
 	env.SetMapSize(1 << 36) // max file size
-	env.SetMaxDBs(10)		// up to 10 named databases
+	env.SetMaxDBs(10)       // up to 10 named databases
 	env.Open(mdbDir, 0, 0664)
 	txn, _ := env.BeginTxn(nil, 0)
 
@@ -151,7 +151,7 @@ func ListTopMostCommits() (<-chan []byte, error) {
 				return
 			}
 
-			if !isParent {	// In case this commit is not a parent --> output it as a top most commit
+			if !isParent { // In case this commit is not a parent --> output it as a top most commit
 				result <- l
 			}
 		}
@@ -180,13 +180,12 @@ func ListLevel1Blobs(query string) (<-chan []byte, error) {
 	return listMdb(&dbiLevel1Blobs, query)
 }
 
-// TODO: Remove duplicate definitions
-const BLOB="blob"
-const COMMIT="commit"
-const PREFIX="prefix"
-const TREE="tree"
+const BLOB = "blob"
+const COMMIT = "commit"
+const PREFIX = "prefix"
+const TREE = "tree"
 
-func getDbForObjectType( objType string) *mdb.DBI {
+func getDbForObjectType(objType string) *mdb.DBI {
 
 	var dbi *mdb.DBI
 	switch objType {
@@ -281,7 +280,7 @@ func listMdb(dbi *mdb.DBI, query string) (<-chan []byte, error) {
 		var queryKey []byte
 		if setRangeUponStart {
 			q := query
-			if len(q) % 2 == 1 {
+			if len(q)%2 == 1 {
 				q = q + "0"
 			}
 			queryKey, _ = hex.DecodeString(q)

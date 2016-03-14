@@ -117,7 +117,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 			}
 
 			// Add tree object to cas
-			_, err = storeBlobInCasCache(treeName, core.TREE)
+			_, err = storeBlobInCasCache(treeName, kv.TREE)
 			if err != nil {
 				return err
 			}
@@ -130,7 +130,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 		}
 
 		// Add commit object to cas
-		_, err = storeBlobInCasCache(commitName, core.COMMIT)
+		_, err = storeBlobInCasCache(commitName, kv.COMMIT)
 		if err != nil {
 			return err
 		}
@@ -143,7 +143,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 	}
 
 	// Add prefix object to cas
-	_, err = storeBlobInCasCache(prefixName, core.PREFIX)
+	_, err = storeBlobInCasCache(prefixName, kv.PREFIX)
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func fetchBlobToTempFile(hash string, client backend.Backend) (tempFile string, 
 
 func pullBlob(hash, objType string, client backend.Backend, verbose bool) error {
 
-	if verbose && objType == core.COMMIT {
+	if verbose && objType == kv.COMMIT {
 		fmt.Println("Fetching commit", hash)
 	}
 	_, err := pullBlobDownToLocalDisk(hash, objType, client)
@@ -216,7 +216,7 @@ func storeBlobInCasCache(name, objType string) ([]byte, error) {
 	defer in.Close()
 
 	var cw *cas.Writer
-	if objType == core.PREFIX {
+	if objType == kv.PREFIX {
 		cw = cas.MakeWriterInCheatMode(objType)
 	} else {
 		cw = cas.MakeWriter(objType)
@@ -253,7 +253,7 @@ func cacheKeysForBlobs(added []string) error {
 		values = append(values, nil)
 
 		if len(keys) == cap(keys) {
-			err := kv.AddMultiToLevel1(keys, values, core.BLOB)
+			err := kv.AddMultiToLevel1(keys, values, kv.BLOB)
 			if err != nil {
 				return err
 			}
@@ -265,7 +265,7 @@ func cacheKeysForBlobs(added []string) error {
 	}
 
 	if len(keys) > 0 {
-		err := kv.AddMultiToLevel1(keys, values, core.BLOB)
+		err := kv.AddMultiToLevel1(keys, values, kv.BLOB)
 		if err != nil {
 			return err
 		}
