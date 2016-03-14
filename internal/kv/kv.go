@@ -41,6 +41,7 @@ func OpenDatabase() error {
 
 	env, _ = mdb.NewEnv()
 	// TODO: Figure out proper size for lmdb
+	// TODO: Windows: max size is capped at 32
 	env.SetMapSize(1 << 36) // max file size
 	env.SetMaxDBs(10)		// up to 10 named databases
 	env.Open(mdbDir, 0, 0664)
