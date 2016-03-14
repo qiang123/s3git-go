@@ -139,7 +139,7 @@ func StoreCommitObject(message, branch string, warmParents, coldParents []string
 
 func getGitUserNameAndEmail() (name, email string, err error) {
 
-	_, err = exec.Command("got", "help").Output()
+	_, err = exec.Command("git", "help").Output()
 	if err != nil {
 		return "", "", errors.New("git executable not found, is git installed? Needed for name and email configuration")
 	}
