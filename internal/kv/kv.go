@@ -28,8 +28,8 @@ var dbiLevel1Trees mdb.DBI
 // KV database containing overview of added/removed blobs in stage
 var dbiStage mdb.DBI
 
-// KV database top most commits (may be more than one or zero initially)
-var dbiTopMostCommits mdb.DBI
+// KV database that marks commits objects as being a parent commit
+var dbiLevel1CommitsIsParent mdb.DBI
 
 func OpenDatabase() error {
 
@@ -50,10 +50,6 @@ func OpenDatabase() error {
 	dbstage := "stage"
 	dbiStage, _ = txn.DBIOpen(&dbstage, mdb.CREATE)
 
-	// list of top most commits
-	dbtopMostCommits := "topmostcommits"
-	dbiTopMostCommits, _ = txn.DBIOpen(&dbtopMostCommits, mdb.CREATE)
-
 	// Level 1 databases
 	dbl1blobs := "l1blobs"
 	dbiLevel1Blobs, _ = txn.DBIOpen(&dbl1blobs, mdb.CREATE)
@@ -63,6 +59,10 @@ func OpenDatabase() error {
 	dbiLevel1Prefixes, _ = txn.DBIOpen(&dbl1prefixes, mdb.CREATE)
 	dbl1trees := "l1trees"
 	dbiLevel1Trees, _ = txn.DBIOpen(&dbl1trees, mdb.CREATE)
+
+	// list of top most commits
+	dbcommitsisparents := "l1commitsisparent"
+	dbiLevel1CommitsIsParent, _ = txn.DBIOpen(&dbcommitsisparents, mdb.CREATE)
 
 	txn.Commit()
 
@@ -105,31 +105,58 @@ func ListStage() (<-chan []byte, error) {
 	return listMdb(&dbiStage, "")
 }
 
-func AddTopMostCommit(key string) error {
+func MarkCommitAsParent(key string) error {
 
 	hx, _ := hex.DecodeString(key)
 
 	txn, _ := env.BeginTxn(nil, 0)
-	txn.Put(dbiTopMostCommits, hx, nil, 0)
+	txn.Put(dbiLevel1CommitsIsParent, hx, nil, 0)
 	txn.Commit()
 
 	return nil
 }
 
-func RemoveTopMostCommit(key string) error {
+func CommitIsParent(key []byte) (bool, error) {
 
-	hx, _ := hex.DecodeString(key)
+	txn, _ := env.BeginTxn(nil, mdb.RDONLY)
+	defer txn.Abort()
 
-	txn, _ := env.BeginTxn(nil, 0)
-	txn.Del(dbiTopMostCommits, hx, nil)
-	txn.Commit()
+	_, err := txn.Get(dbiLevel1CommitsIsParent, key)
+	if err != nil && !(err == mdb.NotFound) {
+		return false, err
+	} else if !(err == mdb.NotFound) {
+		return true, err
+	}
 
-	return nil
+	return false, mdb.NotFound
 }
 
 func ListTopMostCommits() (<-chan []byte, error) {
 
-	return listMdb(&dbiTopMostCommits, "")
+	list, err := ListLevel1Commits()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(chan []byte)
+
+	go func() {
+		// make sure we always close the channel
+		defer close(result)
+
+		for l := range list {
+			isParent, err := CommitIsParent(l)
+			if err != nil && err != mdb.NotFound {
+				return
+			}
+
+			if !isParent {	// In case this commit is not a parent --> output it as a top most commit
+				result <- l
+			}
+		}
+	}()
+
+	return result, nil
 }
 
 func ListLevel1Commits() (<-chan []byte, error) {
