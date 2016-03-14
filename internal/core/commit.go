@@ -38,13 +38,12 @@ func makeCommitObject(message, branch, tree string, warmParents, coldParents []s
 
 	co.S3gitCommitterName = name
 	co.S3gitCommitterEmail = email
-	// TODO: Want to report as UTC or not (git includes a timezone)
-	co.S3gitTimeStamp = time.Now(). /*.UTC()*/ Format(time.RFC3339Nano)
+	co.S3gitTimeStamp = time.Now().Format(time.RFC3339)
 	return &co
 }
 
 func (co *commitObject) ParseTime() (time.Time, error) {
-	return time.Parse(time.RFC3339Nano, co.S3gitTimeStamp)
+	return time.Parse(time.RFC3339, co.S3gitTimeStamp)
 }
 
 func (co *commitObject) MarkWarmAndColdParents() error {

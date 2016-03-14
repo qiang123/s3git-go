@@ -132,8 +132,8 @@ func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 				}
 				inputs[0] = *input
 			} else if len(inputs) == 2 {
-				t1, _ := time.Parse(time.RFC3339Nano, inputs[0].TimeStamp)
-				t2, _ := time.Parse(time.RFC3339Nano, inputs[1].TimeStamp)
+				t1, _ := time.Parse(time.RFC3339, inputs[0].TimeStamp)
+				t2, _ := time.Parse(time.RFC3339, inputs[1].TimeStamp)
 
 				if inputs[0].Hash == inputs[1].Hash {
 					// Same commit object so discard second instance
