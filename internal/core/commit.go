@@ -3,9 +3,11 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/s3git/s3git-go/internal/kv"
+	"os/exec"
 	"strings"
 	"time"
-	"github.com/s3git/s3git-go/internal/kv"
+	"errors"
 )
 
 const COMMIT = "commit"
@@ -18,24 +20,24 @@ const COMMIT = "commit"
 
 type commitObject struct {
 	coreObject
-	S3gitMessage     string   `json:"s3gitMessage"`     // Message describing the commit (optional)
-	S3gitCommitter   string   `json:"s3gitCommitter"`   // Person doing the commit
-	S3gitBranch      string   `json:"s3gitBranch"`      // Name of the branch
-	S3gitTree        string   `json:"s3gitTree"`        // Tree object for the commit
-	S3gitWarmParents []string `json:"s3gitWarmParents"` // List of parent commits up the (possibly split) chain
-	S3gitColdParents []string `json:"s3gitColdParents"` // Parent commits that are no longer part of the chain
-	S3gitTimeStamp   string   `json:"s3gitTimeStamp"`
-	S3gitPadding     string   `json:"s3gitPadding"`
+	S3gitMessage        string   `json:"s3gitMessage"`       // Message describing the commit (optional)
+	S3gitCommitterName  string   `json:"s3gitCommitterName"` // Name of person doing the commit (from git)
+	S3gitCommitterEmail string   `json:"s3gitCommitterName"` // Email of person doing the commit (from git)
+	S3gitBranch         string   `json:"s3gitBranch"`        // Name of the branch
+	S3gitTree           string   `json:"s3gitTree"`          // Tree object for the commit
+	S3gitWarmParents    []string `json:"s3gitWarmParents"`   // List of parent commits up the (possibly split) chain
+	S3gitColdParents    []string `json:"s3gitColdParents"`   // Parent commits that are no longer part of the chain
+	S3gitTimeStamp      string   `json:"s3gitTimeStamp"`
+	S3gitPadding        string   `json:"s3gitPadding"`
 }
 
-func makeCommitObject(message, branch, tree string, warmParents, coldParents []string) *commitObject {
+func makeCommitObject(message, branch, tree string, warmParents, coldParents []string, name, email string) *commitObject {
 
 	co := commitObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: COMMIT}, S3gitMessage: message, S3gitBranch: branch,
 		S3gitTree: tree, S3gitWarmParents: warmParents, S3gitColdParents: coldParents}
 
-	// TODO: Read from git config
-	// TODO: brackets are translated to \u003c respectively \u003e
-	co.S3gitCommitter = "frankw <fwessels@xs4all.nl>"
+	co.S3gitCommitterName = name
+	co.S3gitCommitterEmail = email
 	// TODO: Want to report as UTC or not (git includes a timezone)
 	co.S3gitTimeStamp = time.Now(). /*.UTC()*/ Format(time.RFC3339Nano)
 	return &co
@@ -109,8 +111,13 @@ func StoreCommitObject(message, branch string, warmParents, coldParents []string
 		return "", false, err
 	}
 
+	name, email, err := getGitUserNameAndEmail()
+	if err != nil {
+		return "", false, err
+	}
+
 	// Create commit object
-	commitObject := makeCommitObject(message, branch, treeHash, warmParents, coldParents)
+	commitObject := makeCommitObject(message, branch, treeHash, warmParents, coldParents, name, email)
 
 	buf := new(bytes.Buffer)
 
@@ -128,4 +135,24 @@ func StoreCommitObject(message, branch string, warmParents, coldParents []string
 	}
 
 	return h, false, e
+}
+
+func getGitUserNameAndEmail() (name, email string, err error) {
+
+	_, err = exec.Command("got", "help").Output()
+	if err != nil {
+		return "", "", errors.New("git executable not found, is git installed? Needed for name and email configuration")
+	}
+
+	n, err := exec.Command("git", "config", "user.name").Output()
+	if err != nil {
+		return "", "", err
+	}
+
+	e, err := exec.Command("git", "config", "user.email").Output()
+	if err != nil {
+		return "", "", err
+	}
+
+	return strings.TrimSpace(string(n)), strings.TrimSpace(string(e)), nil
 }
