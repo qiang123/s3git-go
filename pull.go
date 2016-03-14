@@ -135,12 +135,10 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 			return err
 		}
 
-		// Mark warm and cold parents as parents in KV
-		for _, parentCommit := range co.S3gitWarmParents {
-			kv.MarkCommitAsParent(parentCommit)
-		}
-		for _, parentCommit := range co.S3gitColdParents {
-			kv.MarkCommitAsParent(parentCommit)
+		// Mark warm and cold parents as parents
+		err = co.MarkWarmAndColdParents()
+		if err != nil {
+			return err
 		}
 	}
 
