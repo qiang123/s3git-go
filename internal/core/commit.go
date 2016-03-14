@@ -81,6 +81,12 @@ func GetCommitObject(hash string) (*commitObject, error) {
 		return nil, err
 	}
 
+	return GetCommitObjectFromString(s)
+}
+
+// Get commit object from string contents
+func GetCommitObjectFromString(s string) (*commitObject, error) {
+
 	dec := json.NewDecoder(strings.NewReader(s))
 	var co commitObject
 	if err := dec.Decode(&co); err != nil {

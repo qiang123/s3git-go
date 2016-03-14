@@ -85,6 +85,12 @@ func GetTreeObject(hash string) (*treeObject, error) {
 
 	s := string(buf.Bytes())
 
+	return GetTreeObjectFromString(s)
+}
+
+// Return tree object from string contents
+func GetTreeObjectFromString(s string) (*treeObject, error) {
+
 	dec := json.NewDecoder(strings.NewReader(s))
 	var to treeObject
 	if err := dec.Decode(&to); err != nil {

@@ -49,7 +49,7 @@ func prefix() string {
 	return strings.Repeat(string(prefixChar), prefixNum)
 }
 
-// Get commit object based on hash
+// Get prefix object based on hash
 func GetPrefixObject(hash string) (*prefixObject, error) {
 
 	s, err := readBlob(hash)
@@ -57,6 +57,11 @@ func GetPrefixObject(hash string) (*prefixObject, error) {
 		return nil, err
 	}
 
+	return GetPrefixObjectFromString(s)
+}
+
+// Get prefix object from string contents
+func GetPrefixObjectFromString(s string) (*prefixObject, error) {
 	dec := json.NewDecoder(strings.NewReader(s))
 	var po prefixObject
 	if err := dec.Decode(&po); err != nil {
