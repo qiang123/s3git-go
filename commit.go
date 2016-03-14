@@ -3,16 +3,16 @@ package s3git
 import (
 	"encoding/hex"
 	"errors"
-	"time"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
+	"time"
 )
 
 type Commit struct {
-	Hash    string
-	Message string
+	Hash      string
+	Message   string
 	TimeStamp string
-	Parent	string
+	Parent    string
 }
 
 // Perform a commit for the repository
@@ -179,11 +179,11 @@ func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 
 func getCommit(commit string) (*Commit, bool, error) {
 	if commit == "" {
-		return nil, true, nil	// we are done
+		return nil, true, nil // we are done
 	}
 	co, err := core.GetCommitObject(commit)
 	if err != nil {
-		return nil, false,  err
+		return nil, false, err
 	}
 	result := Commit{Hash: commit, Message: co.S3gitMessage, TimeStamp: co.S3gitTimeStamp}
 	if len(co.S3gitWarmParents) == 1 {

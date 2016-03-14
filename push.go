@@ -1,24 +1,24 @@
 package s3git
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 
-	"github.com/s3git/s3git-go/internal/cas"
-	"github.com/s3git/s3git-go/internal/core"
-	"github.com/s3git/s3git-go/internal/config"
-	"github.com/s3git/s3git-go/internal/kv"
-	"github.com/s3git/s3git-go/internal/util"
 	"github.com/s3git/s3git-go/internal/backend"
 	"github.com/s3git/s3git-go/internal/backend/s3"
+	"github.com/s3git/s3git-go/internal/cas"
+	"github.com/s3git/s3git-go/internal/config"
+	"github.com/s3git/s3git-go/internal/core"
+	"github.com/s3git/s3git-go/internal/kv"
+	"github.com/s3git/s3git-go/internal/util"
 
+	"encoding/hex"
 	"github.com/dustin/go-humanize"
 	"sync"
-	"encoding/hex"
 )
 
 // Perform a push to the back end for the repository
-func (repo Repository) Push(/*progress func(maxTicks int64)*/) error {
+func (repo Repository) Push( /*progress func(maxTicks int64)*/ ) error {
 
 	list, err := kv.ListLevel1Prefixes()
 	if err != nil {
@@ -173,7 +173,7 @@ func PushBlobRange(hashes []string, size *uint64, client backend.Backend) error 
 
 		go func() {
 			defer wg.Done()
-			for hash := range msgs  {
+			for hash := range msgs {
 				_, err := PushBlob(hash, size, client)
 				results <- err
 			}
@@ -203,7 +203,7 @@ func PushBlobRange(hashes []string, size *uint64, client backend.Backend) error 
 }
 
 // List prefixes at back end store, doing 16 lists in parallel
-func ListPrefixes(client backend.Backend) (map[string]bool, error){
+func ListPrefixes(client backend.Backend) (map[string]bool, error) {
 
 	var wg sync.WaitGroup
 	var results = make(chan []string)

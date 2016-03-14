@@ -1,11 +1,11 @@
 package s3git
 
 import (
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"github.com/s3git/s3git-go/internal/core"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
-	"fmt"
 	"strings"
 	"testing"
 )

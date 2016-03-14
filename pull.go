@@ -1,23 +1,23 @@
 package s3git
 
 import (
-	"fmt"
-	"io"
-	"os"
-	"io/ioutil"
 	"encoding/hex"
-	"github.com/s3git/s3git-go/internal/cas"
-	"github.com/s3git/s3git-go/internal/core"
-	"github.com/s3git/s3git-go/internal/config"
-	"github.com/s3git/s3git-go/internal/kv"
-	"github.com/s3git/s3git-go/internal/util"
+	"fmt"
 	"github.com/s3git/s3git-go/internal/backend"
 	"github.com/s3git/s3git-go/internal/backend/s3"
+	"github.com/s3git/s3git-go/internal/cas"
+	"github.com/s3git/s3git-go/internal/config"
+	"github.com/s3git/s3git-go/internal/core"
+	"github.com/s3git/s3git-go/internal/kv"
+	"github.com/s3git/s3git-go/internal/util"
 	"github.com/szferi/gomdb"
+	"io"
+	"io/ioutil"
+	"os"
 )
 
 // Pull updates for the repository
-func (repo Repository) Pull(/*progress func(maxTicks int64)*/) error {
+func (repo Repository) Pull( /*progress func(maxTicks int64)*/ ) error {
 
 	client := s3.MakeClient(config.Config.S3gitS3Bucket, config.Config.S3gitS3Region, config.Config.S3gitS3AccessKey, config.Config.S3gitS3SecretKey)
 	return pull(client)
@@ -190,7 +190,7 @@ func pullBlob(hash, objType string, client backend.Backend, verbose bool) error 
 	if verbose && objType == core.COMMIT {
 		fmt.Println("Fetching commit", hash)
 	}
-	_, err := pullBlobDownToLocalDisk(hash, objType , client)
+	_, err := pullBlobDownToLocalDisk(hash, objType, client)
 	return err
 }
 
