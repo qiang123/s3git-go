@@ -45,6 +45,25 @@ func (co *commitObject) ParseTime() (time.Time, error) {
 	return time.Parse(time.RFC3339Nano, co.S3gitTimeStamp)
 }
 
+func (co *commitObject) MarkWarmAndColdParents() error {
+
+	// Mark warm and cold parents as parents in KV
+	for _, parentCommit := range co.S3gitWarmParents {
+		err := kv.MarkCommitAsParent(parentCommit)
+		if err != nil {
+			return err
+		}
+	}
+	for _, parentCommit := range co.S3gitColdParents {
+		err := kv.MarkCommitAsParent(parentCommit)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func isCommit(hash string) bool {
 
 	// TODO: Verify that this hash is a commit object
@@ -97,15 +116,10 @@ func StoreCommitObject(message, branch string, warmParents, coldParents []string
 	// Write to disk
 	h, e := commitObject.write(buf, COMMIT)
 
-	// Remove previous parent commits
-	for _, parentCommit := range warmParents {
-		kv.RemoveTopMostCommit(parentCommit)
-	}
-	for _, parentCommit := range coldParents {
-		kv.RemoveTopMostCommit(parentCommit)
+	err = commitObject.MarkWarmAndColdParents()
+	if err != nil {
+		return "", false, err
 	}
 
-	// Set commit as top most commit
-	kv.AddTopMostCommit(h)
 	return h, false, e
 }
