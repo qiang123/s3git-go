@@ -2,6 +2,8 @@ package backend
 
 import (
 	"io"
+	"github.com/s3git/s3git-go/internal/config"
+	"github.com/s3git/s3git-go/internal/backend/s3"
 )
 
 type Backend interface {
@@ -12,3 +14,6 @@ type Backend interface {
 	List(prefix string, action func(key string)) ([]string, error)
 }
 
+func GetDefaultClient() Backend {
+	return s3.MakeClient(config.Config.Remotes[0])
+}

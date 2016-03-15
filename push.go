@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	"github.com/s3git/s3git-go/internal/backend"
-	"github.com/s3git/s3git-go/internal/backend/s3"
 	"github.com/s3git/s3git-go/internal/cas"
-	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
 	"github.com/s3git/s3git-go/internal/util"
@@ -25,7 +23,7 @@ func (repo Repository) Push( /*progress func(maxTicks int64)*/ ) error {
 		return err
 	}
 
-	client := s3.MakeClient(config.Config.Remotes[0])
+	client := backend.GetDefaultClient()
 	return push(list, client)
 }
 

@@ -4,9 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/backend"
-	"github.com/s3git/s3git-go/internal/backend/s3"
 	"github.com/s3git/s3git-go/internal/cas"
-	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
 	"github.com/s3git/s3git-go/internal/util"
@@ -19,7 +17,7 @@ import (
 // Pull updates for the repository
 func (repo Repository) Pull( /*progress func(maxTicks int64)*/ ) error {
 
-	client := s3.MakeClient(config.Config.Remotes[0])
+	client := backend.GetDefaultClient()
 	return pull(client)
 }
 
