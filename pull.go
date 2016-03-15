@@ -9,7 +9,6 @@ import (
 	"github.com/s3git/s3git-go/internal/kv"
 	"github.com/s3git/s3git-go/internal/util"
 	"github.com/szferi/gomdb"
-	"io"
 	"io/ioutil"
 	"os"
 )
@@ -115,7 +114,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 			}
 
 			// Add tree object to cas
-			_, err = storeBlobInCasCache(treeName, kv.TREE)
+			_, err = cas.StoreBlobInCache(treeName, kv.TREE)
 			if err != nil {
 				return err
 			}
@@ -128,7 +127,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 		}
 
 		// Add commit object to cas
-		_, err = storeBlobInCasCache(commitName, kv.COMMIT)
+		_, err = cas.StoreBlobInCache(commitName, kv.COMMIT)
 		if err != nil {
 			return err
 		}
@@ -141,7 +140,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 	}
 
 	// Add prefix object to cas
-	_, err = storeBlobInCasCache(prefixName, kv.PREFIX)
+	_, err = cas.StoreBlobInCache(prefixName, kv.PREFIX)
 	if err != nil {
 		return err
 	}
@@ -152,7 +151,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 // Fetch blob down to temp file along with contents
 func fetchBlobTempFileAndContents(prefix string, client backend.Backend) (tempFile string, contents []byte, err error) {
 
-	name, err := fetchBlobToTempFile(prefix, client)
+	name, err := cas.FetchBlobToTempFile(prefix, client)
 	if err != nil {
 		return "", nil, err
 	}
@@ -165,73 +164,6 @@ func fetchBlobTempFileAndContents(prefix string, client backend.Backend) (tempFi
 	return name, contents, nil
 }
 
-// Fetch blob down to temp file in order to load
-func fetchBlobToTempFile(hash string, client backend.Backend) (tempFile string, err error) {
-
-	file, err := ioutil.TempFile("", "pull-")
-	if err != nil {
-		return "", err
-	}
-
-	err = client.DownloadWithWriter(hash, file)
-	if err != nil {
-		return "", err
-	}
-	name := file.Name()
-	file.Close()
-
-	return name, nil
-}
-
-func pullBlob(hash, objType string, client backend.Backend, verbose bool) error {
-
-	if verbose && objType == kv.COMMIT {
-		fmt.Println("Fetching commit", hash)
-	}
-	_, err := pullBlobDownToLocalDisk(hash, objType, client)
-	return err
-}
-
-func pullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]byte, error) {
-
-	// TODO: Remove work around by using separate file
-	name, err := fetchBlobToTempFile(hash, client)
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(name)
-
-	return storeBlobInCasCache(name, objType)
-}
-
-// Store the blob in the caching area of the cas
-func storeBlobInCasCache(name, objType string) ([]byte, error) {
-
-	in, err := os.Open(name)
-	if err != nil {
-		return nil, err
-	}
-	defer in.Close()
-
-	var cw *cas.Writer
-	if objType == kv.PREFIX {
-		cw = cas.MakeWriterInCheatMode(objType)
-	} else {
-		cw = cas.MakeWriter(objType)
-	}
-
-	// For pulls write to the cache area (not stage)
-	cw.SetAreaDir(cas.CacheDir)
-
-	io.Copy(cw, in)
-
-	_, leafHashes, _, err := cw.Flush()
-	if err != nil {
-		return nil, err
-	}
-
-	return leafHashes, nil
-}
 
 // Just cache the key for BLOBs, content will be pulled down later when needed
 // For performance do not write per key to the KV but write in larger batches

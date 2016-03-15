@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"github.com/s3git/s3git-go/internal/kv"
+	"github.com/s3git/s3git-go/internal/backend"
 	"encoding/hex"
 )
 
@@ -55,7 +56,24 @@ func openRoot(hash string) ([]Key, error) {
 // Pull a blob on demand from the back end store
 func pullDownOnDemand(hash string) ([]byte, error) {
 
-	return nil, nil
+	// TODO: implement streaming mode for large blobs, spawn off multiple GET range-headers
+
+	var client backend.Backend
+	if client == nil  {
+		client = backend.GetDefaultClient()
+	}
+
+	b, _ := hex.DecodeString(hash)
+	_, objType, err := kv.GetLevel1(b)
+	if err != nil {
+		return nil, err
+	}
+	leafHashes, err := pullBlobDownToLocalDisk(hash, objType, client)
+	if err != nil {
+		return nil, err
+	}
+
+	return leafHashes, nil
 }
 
 // Open the root hash of a blob
@@ -128,6 +146,66 @@ func (cr *Reader) Read(p []byte) (n int, err error) {
 		}
 	}
 }
+
+// Fetch blob down to temp file in order to load
+func FetchBlobToTempFile(hash string, client backend.Backend) (tempFile string, err error) {
+
+	file, err := ioutil.TempFile("", "pull-")
+	if err != nil {
+		return "", err
+	}
+
+	err = client.DownloadWithWriter(hash, file)
+	if err != nil {
+		return "", err
+	}
+	name := file.Name()
+	file.Close()
+
+	return name, nil
+}
+
+// Store the blob in the caching area of the cas
+func StoreBlobInCache(name, objType string) ([]byte, error) {
+
+	in, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer in.Close()
+
+	var cw *Writer
+	if objType == kv.PREFIX {
+		cw = MakeWriterInCheatMode(objType)
+	} else {
+		cw = MakeWriter(objType)
+	}
+
+	// For pulls write to the cache area (not stage)
+	cw.setAreaDir(cacheDir)
+
+	io.Copy(cw, in)
+
+	_, leafHashes, _, err := cw.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	return leafHashes, nil
+}
+
+func pullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]byte, error) {
+
+	// TODO: Remove work around by using separate file
+	name, err := FetchBlobToTempFile(hash, client)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(name)
+
+	return StoreBlobInCache(name, objType)
+}
+
 
 func min(a, b int) int {
 	if a < b {
