@@ -19,7 +19,7 @@ func DeleteChunksForBlob(hash string) error {
 		leafKey := hex.EncodeToString(leafHashes[i : i+KeySize])
 
 		// Test if available in cache directory
-		nameInCache := getBlobPathWithinArea(leafKey, CacheDir)
+		nameInCache := getBlobPathWithinArea(leafKey, cacheDir)
 		if _, err := os.Stat(nameInCache); err == nil {
 			if err := os.Remove(nameInCache); err != nil {
 				return err
