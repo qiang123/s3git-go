@@ -19,7 +19,7 @@ import (
 // Pull updates for the repository
 func (repo Repository) Pull( /*progress func(maxTicks int64)*/ ) error {
 
-	client := s3.MakeClient(config.Config.S3gitS3Bucket, config.Config.S3gitS3Region, config.Config.S3gitS3AccessKey, config.Config.S3gitS3SecretKey)
+	client := s3.MakeClient(config.Config.Remotes[0])
 	return pull(client)
 }
 

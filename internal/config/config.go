@@ -1,10 +1,10 @@
 package config
 
 import (
-	"os"
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -14,20 +14,26 @@ const CONFIG = "config"
 var Config ConfigObject
 
 type ConfigObject struct {
-	S3gitVersion     int    `json:"s3gitVersion"`
-	S3gitType        string `json:"s3gitType"` // config
+	Version         int            `json:"s3gitVersion"`
+	Type            string         `json:"s3gitType"` // config
+	CasPath         string         `json:"s3gitCasPath"`
+	RollingHashBits int            `json:"s3gitRollingHashBits"`
+	RollingHashMin  int            `json:"s3gitRollingHashMin"`
+	Remotes         []RemoteObject `json:"s3gitRemotes"`
+}
 
-	S3gitCasPath	 string `json:"s3gitCasPath"`
+type RemoteObject struct {
+	Name		string `json:"Name"`
+	Hydrate     bool   `json:"Hydrate"`
+	S3Bucket    string `json:"S3Bucket"`
+	S3Region    string `json:"S3Region"`
+	S3AccessKey string `json:"S3AccessKey"`
+	S3SecretKey string `json:"S3SecretKey"`
 
-	S3gitS3Bucket    string `json:"s3gitS3Bucket"`
-	S3gitS3Region    string `json:"s3gitS3Region"`
-	S3gitS3AccessKey string `json:"s3gitS3AccessKey"`
-	S3gitS3SecretKey string `json:"s3gitS3SecretKey"`
+	MinioEndpoint string `json:"MinioEndpoint"`
+	MinioInsecure bool   `json:"MinioInsecure"`
 
-	S3gitMinioEndpoint string `json:"s3gitMinioEndpoint"`
-	S3gitMinioInsecure bool   `json:"s3gitMinioInsecure"`
-
-	S3gitAcdRefreshToken string `json:"s3gitAcdRefreshToken"`
+	AcdRefreshToken string `json:"AcdRefreshToken"`
 }
 
 func getConfigFile(dir string) string {
@@ -57,8 +63,8 @@ func SaveConfig(dir string) error {
 	accessKey := getDefaultValue("", "S3GIT_S3_ACCESS_KEY")
 	secretKey := getDefaultValue("", "S3GIT_S3_SECRET_KEY")
 
-	configObject := ConfigObject{S3gitVersion: 1, S3gitType: CONFIG, S3gitCasPath:dir,
-		S3gitS3Bucket: bucket, S3gitS3Region: region, S3gitS3AccessKey: accessKey, S3gitS3SecretKey: secretKey, S3gitMinioEndpoint: "localhost:9000", S3gitMinioInsecure: true }
+	configObject := ConfigObject{Version: 1, Type: CONFIG, CasPath: dir}
+	configObject.Remotes = append(configObject.Remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, MinioEndpoint: "localhost:9000", MinioInsecure: true})
 
 	buf := new(bytes.Buffer)
 

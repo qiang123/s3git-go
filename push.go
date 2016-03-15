@@ -25,7 +25,7 @@ func (repo Repository) Push( /*progress func(maxTicks int64)*/ ) error {
 		return err
 	}
 
-	client := s3.MakeClient(config.Config.S3gitS3Bucket, config.Config.S3gitS3Region, config.Config.S3gitS3AccessKey, config.Config.S3gitS3SecretKey)
+	client := s3.MakeClient(config.Config.Remotes[0])
 	return push(list, client)
 }
 

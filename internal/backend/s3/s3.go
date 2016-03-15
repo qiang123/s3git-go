@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/s3git/s3git-go/internal/config"
 )
 
 type Client struct {
@@ -18,9 +19,9 @@ type Client struct {
 	SecretKey  string
 }
 
-func MakeClient(bucket, region, accessKey, secretKey string) *Client {
+func MakeClient(remote config.RemoteObject) *Client {
 
-	return &Client{Bucket: bucket, Region: region, AccessKey: accessKey, SecretKey: secretKey}
+	return &Client{Bucket: remote.S3Bucket, Region: remote.S3Region, AccessKey: remote.S3AccessKey, SecretKey: remote.S3SecretKey}
 }
 
 // Upload a file to S3
