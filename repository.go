@@ -8,7 +8,6 @@ import (
 	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/kv"
 	"io"
-	"time"
 )
 
 type Repository struct {
@@ -32,30 +31,6 @@ func OpenRepository(path string) (*Repository, error) {
 	}
 	if success {
 		kv.OpenDatabase()
-	}
-
-	return &Repository{}, nil
-}
-
-// Clone a remote repository
-func Clone(url, path string, progressDownloading, progressProcessing func(maxTicks int64)) (*Repository, error) {
-
-	downloadTicks := int64(250)
-	for i := int64(0); i < downloadTicks; i++ {
-
-		time.Sleep(time.Millisecond * 20)
-		if progressDownloading != nil {
-			progressDownloading(downloadTicks)
-		}
-	}
-
-	processTicks := int64(100)
-	for i := int64(0); i < processTicks; i++ {
-
-		time.Sleep(time.Millisecond * 50)
-		if progressProcessing != nil {
-			progressProcessing(processTicks)
-		}
 	}
 
 	return &Repository{}, nil
