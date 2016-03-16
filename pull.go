@@ -23,7 +23,7 @@ func (repo Repository) Pull( /*progress func(maxTicks int64)*/ ) error {
 func pull(client backend.Backend) error {
 
 	// Get map of prefixes already in store
-	prefixesInBackend, err := ListPrefixes(client)
+	prefixesInBackend, err := listPrefixes(client)
 	if err != nil {
 		return err
 	}
@@ -164,16 +164,15 @@ func fetchBlobTempFileAndContents(prefix string, client backend.Backend) (tempFi
 	return name, contents, nil
 }
 
+const treeBatchSize = 0x4000
 
 // Just cache the key for BLOBs, content will be pulled down later when needed
 // For performance do not write per key to the KV but write in larger batches
 func cacheKeysForBlobs(added []string) error {
 
-	const TREE_BATCH_SIZE = 0x4000
-
 	// Create arrays to be able to batch the operation
-	keys := make([][]byte, 0, TREE_BATCH_SIZE)
-	values := make([][]byte, 0, TREE_BATCH_SIZE)
+	keys := make([][]byte, 0, treeBatchSize)
+	values := make([][]byte, 0, treeBatchSize)
 
 	count := 0
 	for _, add := range added {

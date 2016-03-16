@@ -34,7 +34,7 @@ func push(prefixChan <-chan []byte, client backend.Backend) error {
 	defer func() { fmt.Println("Finished push") }()
 
 	// Get map of prefixes already in store
-	prefixesInBackend, err := ListPrefixes(client)
+	prefixesInBackend, err := listPrefixes(client)
 	if err != nil {
 		return err
 	}
@@ -67,19 +67,19 @@ func push(prefixChan <-chan []byte, client backend.Backend) error {
 			}
 
 			// first push all added blobs in this commit ...
-			err = PushBlobRange(to.S3gitAdded, nil, client)
+			err = pushBlobRange(to.S3gitAdded, nil, client)
 			if err != nil {
 				return err
 			}
 
 			// then push tree object
-			_, err = PushBlob(co.S3gitTree, nil, client)
+			_, err = pushBlob(co.S3gitTree, nil, client)
 			if err != nil {
 				return err
 			}
 
 			// then push commit object
-			_, err = PushBlob(po.S3gitFollowMe, nil, client)
+			_, err = pushBlob(po.S3gitFollowMe, nil, client)
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ func push(prefixChan <-chan []byte, client backend.Backend) error {
 			// ...  finally push prefix object itself
 			// (if something goes in chain above, the prefix object will be missing so
 			//  will be (attempted to) uploaded again during the next push)
-			_, err = PushBlob(prefix, nil, client)
+			_, err = pushBlob(prefix, nil, client)
 			if err != nil {
 				return err
 			}
@@ -98,7 +98,7 @@ func push(prefixChan <-chan []byte, client backend.Backend) error {
 }
 
 // Push a single blob to the back end store
-func PushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded bool, err error) {
+func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded bool, err error) {
 
 	startOfLine := ""
 	if size != nil {
@@ -160,7 +160,7 @@ func minu64(x, y uint64) uint64 {
 //
 // See https://github.com/adonovan/gopl.io/blob/master/ch8/thumbnail/thumbnail_test.go
 //
-func PushBlobRange(hashes []string, size *uint64, client backend.Backend) error {
+func pushBlobRange(hashes []string, size *uint64, client backend.Backend) error {
 
 	var wg sync.WaitGroup
 	var msgs = make(chan string)
@@ -172,7 +172,7 @@ func PushBlobRange(hashes []string, size *uint64, client backend.Backend) error 
 		go func() {
 			defer wg.Done()
 			for hash := range msgs {
-				_, err := PushBlob(hash, size, client)
+				_, err := pushBlob(hash, size, client)
 				results <- err
 			}
 		}()
@@ -201,7 +201,7 @@ func PushBlobRange(hashes []string, size *uint64, client backend.Backend) error 
 }
 
 // List prefixes at back end store, doing 16 lists in parallel
-func ListPrefixes(client backend.Backend) (map[string]bool, error) {
+func listPrefixes(client backend.Backend) (map[string]bool, error) {
 
 	var wg sync.WaitGroup
 	var results = make(chan []string)
