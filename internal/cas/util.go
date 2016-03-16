@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"github.com/s3git/s3git-go/internal/config"
+	"github.com/s3git/s3git-go/internal/backend"
 )
 
 // Upon writing, make sure the size of the repository does not exceed the max local size,
@@ -33,6 +34,25 @@ func getBlobPath(hash string) string {
 	// TODO: Chunk is not in cache, download from upstream
 
 	return nameInCache
+}
+
+// Push a low level leaf node to a remote back end
+func PushLeafBlob(hash string, client backend.Backend) error {
+
+	path := getBlobPath(hash)
+
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	err = client.UploadWithReader(hash, file)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Get the filepath for a given hash in either the .stage or .cache area
