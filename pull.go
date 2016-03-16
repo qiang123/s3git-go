@@ -2,25 +2,24 @@ package s3git
 
 import (
 	"encoding/hex"
-	"fmt"
 	"github.com/s3git/s3git-go/internal/backend"
 	"github.com/s3git/s3git-go/internal/cas"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
-	"github.com/s3git/s3git-go/internal/util"
 	"github.com/szferi/gomdb"
 	"io/ioutil"
 	"os"
 )
 
 // Pull updates for the repository
-func (repo Repository) Pull( /*progress func(maxTicks int64)*/ ) error {
+func (repo Repository) Pull(progress func(maxTicks int64)) error {
 
-	client := backend.GetDefaultClient()
-	return pull(client)
+	return pull(progress)
 }
 
-func pull(client backend.Backend) error {
+func pull(progress func(maxTicks int64)) error {
+
+	client := backend.GetDefaultClient()
 
 	// Get map of prefixes already in store
 	prefixesInBackend, err := listPrefixes(client)
@@ -44,15 +43,23 @@ func pull(client backend.Backend) error {
 		}
 	}
 
+	if len(prefixesToFetch) == 0 {
+		return nil
+	}
+
+	progress(int64(len(prefixesToFetch)))
+
 	// TODO: Speedup by running parallel in multiple go routines
 	// TODO: Add progress feedback
 	for _, prefix := range prefixesToFetch {
-		fmt.Println("Fetching", util.FriendlyHash(prefix))
+
 		// Fetch Prefix object and all objects directly and indirectly referenced by it
 		err = fetchPrefix(prefix, client)
 		if err != nil {
 			return err
 		}
+
+		progress(int64(len(prefixesToFetch)))
 	}
 
 	return nil
