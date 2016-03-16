@@ -180,6 +180,18 @@ func ListLevel1Blobs(query string) (<-chan []byte, error) {
 	return listMdb(&dbiLevel1Blobs, query)
 }
 
+func GetLevel1BlobsStats() (uint64, error) {
+
+	txn, _ := env.BeginTxn(nil, mdb.RDONLY)
+	defer txn.Abort()
+	stats, err := txn.Stat(dbiLevel1Blobs)
+	if err != nil {
+		return 0, err
+	}
+
+	return stats.Entries, nil
+}
+
 const BLOB = "blob"
 const COMMIT = "commit"
 const PREFIX = "prefix"

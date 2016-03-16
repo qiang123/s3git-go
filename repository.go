@@ -138,3 +138,19 @@ func (repo Repository) Get(hash string) (io.Reader, error) {
 
 	return r, nil
 }
+
+type Statistics struct {
+	Objects   uint64
+	TotalSize uint64
+}
+
+// Get statistics for the repository
+func (repo Repository) Statistics() (*Statistics, error) {
+
+	entries, err := kv.GetLevel1BlobsStats()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Statistics{Objects: entries, TotalSize: 0}, nil
+}
