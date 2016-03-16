@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"fmt"
 	"strings"
+	"errors"
 )
 
 const S3GIT_CONFIG = ".s3git.config"
@@ -62,6 +64,25 @@ func SaveConfig(dir string) error {
 	region := getDefaultValue("us-east-1", "S3GIT_S3_REGION")
 	accessKey := getDefaultValue("", "S3GIT_S3_ACCESS_KEY")
 	secretKey := getDefaultValue("", "S3GIT_S3_SECRET_KEY")
+
+	return saveConfig(dir, bucket, region, accessKey, secretKey)
+}
+
+func SaveConfigFromUrl(url, dir string) error {
+
+	parts := strings.Split(url, "//")
+	if len(parts) != 2 {
+		return errors.New(fmt.Sprintf("Bucket missing for cloning: %s", url))
+	}
+	bucket := parts[1]
+	region := getDefaultValue("eu-central-1", "S3GIT_S3_REGION")
+	accessKey := getDefaultValue("", "S3GIT_S3_ACCESS_KEY")
+	secretKey := getDefaultValue("", "S3GIT_S3_SECRET_KEY")
+
+	return saveConfig(dir, bucket, region, accessKey, secretKey)
+}
+
+func saveConfig(dir, bucket, region, accessKey, secretKey string) error {
 
 	configObject := ConfigObject{Version: 1, Type: CONFIG, CasPath: dir}
 	configObject.Remotes = append(configObject.Remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, MinioEndpoint: "localhost:9000", MinioInsecure: true})
