@@ -91,15 +91,11 @@ func (cw *Writer) Flush() (string, []byte, bool, error) {
 
 	cw.flushed = true
 
-	// Compute hash of level 1 root key
-	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
-
-	// Iterate over hashes of all underlying nodes
-	for _, leave := range cw.leaves {
-		blake2.Write(leave.object[:])
+	rootStr, err := computeRootBlake2(cw.leaves)
+	if err != nil {
+		return "", nil, false, err
 	}
 
-	rootStr := NewKey(blake2.Sum(nil)).String()
 	if cw.cheatMode {
 		repeatLastChar := strings.Repeat(string(rootStr[prefixNum-prefixCheat-1]), prefixCheat)
 		rootStr = rootStr[0:prefixNum-prefixCheat] + repeatLastChar + rootStr[prefixNum:]
@@ -129,6 +125,20 @@ func (cw *Writer) Flush() (string, []byte, bool, error) {
 	return rootStr, leafHashes, newBlob, nil
 }
 
+// Compute the root blake key
+func computeRootBlake2(leaves []Key) (string, error) {
+
+	// Compute hash of level 1 root key
+	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
+
+	// Iterate over hashes of all underlying nodes
+	for _, leave := range leaves {
+		blake2.Write(leave.object[:])
+	}
+
+	return NewKey(blake2.Sum(nil)).String(), nil
+}
+
 func (cw *Writer) Close() error {
 	if !cw.flushed {
 		return errors.New("Stream closed without being flushed!")
@@ -145,6 +155,6 @@ func createBlobFile(hash, areaDir string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	return os.Create(hashDir + hash[4:])
 
+	return os.Create(hashDir + hash[4:])
 }
