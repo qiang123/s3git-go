@@ -68,7 +68,7 @@ func pullDownOnDemand(hash string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	leafHashes, err := pullBlobDownToLocalDisk(hash, objType, client)
+	leafHashes, err := PullBlobDownToLocalDisk(hash, objType, client)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func StoreBlobInCache(name, objType string) ([]byte, error) {
 	return leafHashes, nil
 }
 
-func pullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]byte, error) {
+func PullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]byte, error) {
 
 	// TODO: Remove work around by using separate file
 	name, err := FetchBlobToTempFile(hash, client)
