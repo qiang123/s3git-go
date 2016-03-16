@@ -13,31 +13,32 @@ import (
 	"encoding/hex"
 	"github.com/dustin/go-humanize"
 	"sync"
+	"bytes"
 )
 
 // Perform a push to the back end for the repository
-func (repo Repository) Push( /*progress func(maxTicks int64)*/ ) error {
+func (repo Repository) Push(hydrated bool, progress func(maxTicks int64)) error {
 
 	list, err := kv.ListLevel1Prefixes()
 	if err != nil {
 		return err
 	}
 
-	client := backend.GetDefaultClient()
-	return push(list, client)
+	return push(list, hydrated, progress)
 }
 
 // Push any new commit objects including all added objects to the back end store
-func push(prefixChan <-chan []byte, client backend.Backend) error {
+func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)) error {
 
-	fmt.Println("Starting push")
-	defer func() { fmt.Println("Finished push") }()
+	client := backend.GetDefaultClient()
 
 	// Get map of prefixes already in store
 	prefixesInBackend, err := listPrefixes(client)
 	if err != nil {
 		return err
 	}
+
+	prefixesToPush := []string{}
 
 	for prefixByte := range prefixChan {
 
@@ -48,50 +49,63 @@ func push(prefixChan <-chan []byte, client backend.Backend) error {
 		// We can safely skip in case a prefix object is verified (pushed as last object)
 		if !verified {
 
-			// Get prefix object
-			po, err := core.GetPrefixObject(prefix)
-			if err != nil {
-				return err
-			}
-
-			// Get commit object
-			co, err := core.GetCommitObject(po.S3gitFollowMe)
-			if err != nil {
-				return err
-			}
-
-			// Get tree object
-			to, err := core.GetTreeObject(co.S3gitTree)
-			if err != nil {
-				return err
-			}
-
-			// first push all added blobs in this commit ...
-			err = pushBlobRange(to.S3gitAdded, nil, client)
-			if err != nil {
-				return err
-			}
-
-			// then push tree object
-			_, err = pushBlob(co.S3gitTree, nil, client)
-			if err != nil {
-				return err
-			}
-
-			// then push commit object
-			_, err = pushBlob(po.S3gitFollowMe, nil, client)
-			if err != nil {
-				return err
-			}
-
-			// ...  finally push prefix object itself
-			// (if something goes in chain above, the prefix object will be missing so
-			//  will be (attempted to) uploaded again during the next push)
-			_, err = pushBlob(prefix, nil, client)
-			if err != nil {
-				return err
-			}
+			prefixesToPush = append(prefixesToPush, prefix)
 		}
+	}
+
+	if len(prefixesToPush) == 0 {
+		return nil
+	}
+
+	progress(int64(len(prefixesToPush)))
+
+	for _, prefix := range prefixesToPush {
+
+		// Get prefix object
+		po, err := core.GetPrefixObject(prefix)
+		if err != nil {
+			return err
+		}
+
+		// Get commit object
+		co, err := core.GetCommitObject(po.S3gitFollowMe)
+		if err != nil {
+			return err
+		}
+
+		// Get tree object
+		to, err := core.GetTreeObject(co.S3gitTree)
+		if err != nil {
+			return err
+		}
+
+		// first push all added blobs in this commit ...
+		err = pushBlobRange(to.S3gitAdded, nil, client)
+		if err != nil {
+			return err
+		}
+
+		// then push tree object
+		_, err = PushBlob(co.S3gitTree, nil, client)
+		if err != nil {
+			return err
+		}
+
+		// then push commit object
+		_, err = PushBlob(po.S3gitFollowMe, nil, client)
+		if err != nil {
+			return err
+		}
+
+		// ...  finally push prefix object itself
+		// (if something goes in chain above, the prefix object will be missing so
+		//  will be (attempted to) uploaded again during the next push)
+		_, err = PushBlob(prefix, nil, client)
+		if err != nil {
+			return err
+		}
+
+		progress(int64(len(prefixesToPush)))
 	}
 
 	return nil
