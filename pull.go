@@ -19,7 +19,10 @@ func (repo Repository) Pull(progress func(maxTicks int64)) error {
 
 func pull(progress func(maxTicks int64)) error {
 
-	client := backend.GetDefaultClient()
+	client, err := backend.GetDefaultClient()
+	if err != nil {
+		return err
+	}
 
 	// Get map of prefixes already in store
 	prefixesInBackend, err := listPrefixes(client)

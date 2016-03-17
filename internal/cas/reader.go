@@ -60,7 +60,11 @@ func pullDownOnDemand(hash string) ([]byte, error) {
 
 	var client backend.Backend
 	if client == nil  {
-		client = backend.GetDefaultClient()
+		var err error
+		client, err = backend.GetDefaultClient()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	b, _ := hex.DecodeString(hash)

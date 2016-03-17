@@ -34,7 +34,12 @@ func Clone(url, path string, progressDownloading, progressProcessing func(maxTic
 		return nil, err
 	}
 
-	err = clone(backend.GetDefaultClient(), progressDownloading, progressProcessing)
+	client, err := backend.GetDefaultClient()
+	if err != nil {
+		return nil, err
+	}
+
+	err = clone(client, progressDownloading, progressProcessing)
 	if err != nil {
 		return nil, err
 	}

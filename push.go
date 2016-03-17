@@ -30,7 +30,10 @@ func (repo Repository) Push(hydrated bool, progress func(maxTicks int64)) error 
 // Push any new commit objects including all added objects to the back end store
 func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)) error {
 
-	client := backend.GetDefaultClient()
+	client, err := backend.GetDefaultClient()
+	if err != nil {
+		return err
+	}
 
 	// Get map of prefixes already in store
 	prefixesInBackend, err := listPrefixes(client)
