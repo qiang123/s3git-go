@@ -1,23 +1,25 @@
 package core
 
 import (
-	"io"
 	"bytes"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"encoding/json"
-	"sort"
-	"strings"
-	"encoding/hex"
 	"github.com/s3git/s3git-go/internal/cas"
 	"github.com/s3git/s3git-go/internal/kv"
+	"io"
+	"sort"
+	"strings"
 )
 
 type treeObject struct {
 	coreObject
-	S3gitAdded   []string `json:"s3gitAdded"`
-	S3gitRemoved []string `json:"s3gitRemoved"`
-	S3gitPadding string   `json:"s3gitPadding"`
+	S3gitAdded      []string `json:"s3gitAdded"`
+	S3gitRemoved    []string `json:"s3gitRemoved"`
+	S3gitPadding    string   `json:"s3gitPadding"`
+	S3gitBlobUrl    string   `json:"s3gitBlobUrl"`    // URL to access blob (when different from tree object itself)
+	S3gitBlobRegion string   `json:"s3gitBlobRegion"` // URL to access blob (when different from tree object itself)
 }
 
 func makeTreeObject(added <-chan []byte, removed []string) *treeObject {
