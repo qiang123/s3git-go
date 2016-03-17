@@ -8,6 +8,10 @@ import (
 	"fmt"
 	"strings"
 	"errors"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
 const S3GIT_CONFIG = ".s3git.config"
@@ -60,12 +64,7 @@ func LoadConfig(dir string) (bool, error) {
 
 func SaveConfig(dir string) error {
 
-	bucket := getDefaultValue("test", "S3GIT_S3_BUCKET")
-	region := getDefaultValue("us-east-1", "S3GIT_S3_REGION")
-	accessKey := getDefaultValue("", "S3GIT_S3_ACCESS_KEY")
-	secretKey := getDefaultValue("", "S3GIT_S3_SECRET_KEY")
-
-	return saveConfig(dir, bucket, region, accessKey, secretKey)
+	return saveNewConfig(dir, []RemoteObject{})
 }
 
 func SaveConfigFromUrl(url, dir string) error {
@@ -75,17 +74,32 @@ func SaveConfigFromUrl(url, dir string) error {
 		return errors.New(fmt.Sprintf("Bucket missing for cloning: %s", url))
 	}
 	bucket := parts[1]
-	region := getDefaultValue("eu-central-1", "S3GIT_S3_REGION")
 	accessKey := getDefaultValue("", "S3GIT_S3_ACCESS_KEY")
 	secretKey := getDefaultValue("", "S3GIT_S3_SECRET_KEY")
+	region, err := GetRegionForBucket(bucket, accessKey, secretKey)
+	if err != nil {
+		return err
+	}
+	region = getDefaultValue(region, "S3GIT_S3_REGION")	// Allow to be overriden when set explicitly
 
-	return saveConfig(dir, bucket, region, accessKey, secretKey)
+	remotes := []RemoteObject{}
+	remotes = append(remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, MinioInsecure: true})
+
+	return saveNewConfig(dir, remotes)
 }
 
-func saveConfig(dir, bucket, region, accessKey, secretKey string) error {
+func saveNewConfig(dir string, remotes []RemoteObject) error {
 
 	configObject := ConfigObject{Version: 1, Type: CONFIG, CasPath: dir}
-	configObject.Remotes = append(configObject.Remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, MinioEndpoint: "localhost:9000", MinioInsecure: true})
+
+	return saveConfig(configObject, remotes)
+}
+
+func saveConfig(configObject ConfigObject, remotes []RemoteObject) error {
+
+	for _, r := range remotes {
+		configObject.Remotes = append(configObject.Remotes, r)
+	}
 
 	buf := new(bytes.Buffer)
 
@@ -94,13 +108,60 @@ func saveConfig(dir, bucket, region, accessKey, secretKey string) error {
 		return err
 	}
 
-	err := ioutil.WriteFile(getConfigFile(dir), buf.Bytes(), os.ModePerm)
+	err := ioutil.WriteFile(getConfigFile(configObject.CasPath), buf.Bytes(), os.ModePerm)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
+
+func AddRemote(name, bucket, region, accessKey, secretKey string) error {
+
+	for _, r := range Config.Remotes {
+		if r.Name == name {
+			return errors.New(fmt.Sprintf("Remote already exists with name: %s", name))
+		}
+	}
+
+	// TODO: Remove restriction for just a single remote
+	if len(Config.Remotes) >= 1 {
+		return errors.New("Current restriction applies of one remote only (to be lifted)")
+	}
+
+	remotes := []RemoteObject{}
+	remotes = append(remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, MinioInsecure: true})
+
+	return saveConfig(Config, remotes)
+}
+
+
+// Get the region for a bucket or return US Standard otherwise
+func GetRegionForBucket(bucket, accessKey, secretKey string) (string, error) {
+
+	var region string
+
+	// Determine region for bucket
+	if accessKey != "" && secretKey != "" {
+		svc := s3.New(session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""), Region: aws.String("us-east-1")}))
+
+		out, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: aws.String(bucket)})
+		if err != nil {
+			return err
+		}
+		if out.LocationConstraint != nil {
+			region = *out.LocationConstraint
+		}
+	}
+
+	// Or default to US Standard if not found
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	return region, nil
+}
+
 
 func getDefaultValue(def, envName string) string {
 
