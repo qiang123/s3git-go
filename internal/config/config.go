@@ -147,7 +147,7 @@ func GetRegionForBucket(bucket, accessKey, secretKey string) (string, error) {
 
 		out, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: aws.String(bucket)})
 		if err != nil {
-			return err
+			return "", err
 		}
 		if out.LocationConstraint != nil {
 			region = *out.LocationConstraint
