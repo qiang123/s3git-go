@@ -143,12 +143,12 @@ func getGitUserNameAndEmail() (name, email string, err error) {
 
 	n, err := exec.Command("git", "config", "user.name").Output()
 	if err != nil {
-		return "", "", err
+		return "", "", errors.New(`Git user.name not set. Please run 'git config --global user.name "Your Name"'`)
 	}
 
 	e, err := exec.Command("git", "config", "user.email").Output()
 	if err != nil {
-		return "", "", err
+		return "", "", errors.New(`Git user.email not set. Please run 'git config --global user.email yourname@example.com'`)
 	}
 
 	return strings.TrimSpace(string(n)), strings.TrimSpace(string(e)), nil
