@@ -83,7 +83,7 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 		}
 
 		// first push all added blobs in this commit ...
-		err = pushBlobRange(to.S3gitAdded, nil, hydrated, client)
+		err = pushBlobRange(to.S3gitAdded, nil, client)
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 		}
 
 		// then push commit object
-		_, err = PushBlob(po.S3gitFollowMe, nil, client)
+		_, err = pushBlob(po.S3gitFollowMe, nil, client)
 		if err != nil {
 			return err
 		}
