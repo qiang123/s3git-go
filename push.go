@@ -83,13 +83,13 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 		}
 
 		// first push all added blobs in this commit ...
-		err = pushBlobRange(to.S3gitAdded, nil, client)
+		err = pushBlobRange(to.S3gitAdded, nil, hydrated, client)
 		if err != nil {
 			return err
 		}
 
 		// then push tree object
-		_, err = PushBlob(co.S3gitTree, nil, client)
+		_, err = pushBlob(co.S3gitTree, nil, client)
 		if err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 		// ...  finally push prefix object itself
 		// (if something goes in chain above, the prefix object will be missing so
 		//  will be (attempted to) uploaded again during the next push)
-		_, err = PushBlob(prefix, nil, client)
+		_, err = pushBlob(prefix, nil, client)
 		if err != nil {
 			return err
 		}
@@ -114,7 +114,7 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 	return nil
 }
 
-// Push a single blob to the back end store
+// Push a blob to the back end store
 func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded bool, err error) {
 
 	startOfLine := ""
