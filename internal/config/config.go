@@ -14,6 +14,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
+// TODO: move everything into a .s3git directory (but then we have an empty repo/CashPath dir)
+// like so:
+// .s3git/config
+// .s3git/mdb
+// .s3git/cache
+// .s3git/stage
+
 const S3GIT_CONFIG = ".s3git.config"
 const CONFIG = "config"
 
