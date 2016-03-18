@@ -13,7 +13,6 @@ import (
 	"encoding/hex"
 	"github.com/dustin/go-humanize"
 	"sync"
-	"bytes"
 )
 
 // Perform a push to the back end for the repository
