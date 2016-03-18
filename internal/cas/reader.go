@@ -149,7 +149,7 @@ func (cr *Reader) Read(p []byte) (n int, err error) {
 
 				// Double check that missing chunk is now available
 				if _, err := os.Stat(chunkFile); os.IsNotExist(err) {
-					return 0, errors.New("Failed to fetch missing chunk from back end")
+					return 0, errors.New("Failed to fetch missing chunk from remote back end")
 				}
 			}
 
