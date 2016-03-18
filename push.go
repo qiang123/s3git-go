@@ -161,6 +161,7 @@ func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded 
 	}
 
 	fmt.Println(startOfLine, "successfully uploaded to store")
+	//fmt.Println(startOfLine, "successfully uploaded to store")
 
 	return true, nil
 }
