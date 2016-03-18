@@ -34,7 +34,7 @@ var dbiLevel1CommitsIsParent mdb.DBI
 func OpenDatabase() error {
 
 	mdbDir := path.Join(config.Config.CasPath, ".mdb")
-	err := os.MkdirAll(mdbDir, 0777)
+	err := os.MkdirAll(mdbDir, os.ModePerm)
 	if err != nil {
 		return err
 	}
