@@ -6,7 +6,9 @@ import (
 	"errors"
 	"io/ioutil"
 	"github.com/s3git/s3git-go/internal/kv"
+	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/backend"
+	"github.com/s3git/s3git-go/internal/backend/s3"
 	"encoding/hex"
 )
 
@@ -59,6 +61,9 @@ func pullDownOnDemand(hash string) ([]byte, error) {
 	// TODO: implement streaming mode for large blobs, spawn off multiple GET range-headers
 
 	var client backend.Backend
+
+	// TODO: Remove hack to temporarily read from 100m bucket
+	client = HackFor100mBucket(hash)
 	if client == nil  {
 		var err error
 		client, err = backend.GetDefaultClient()
@@ -78,6 +83,33 @@ func pullDownOnDemand(hash string) ([]byte, error) {
 	}
 
 	return leafHashes, nil
+}
+
+// Hack to redirect S3 read to lifedrive-100m-usw2 bucket
+func HackFor100mBucket(hash string) backend.Backend {
+
+	// Following credentials have restricted access to just GetObject
+	accessKey100mRestrictedPolicy := "AKIAJDXB2JULIRQQVHZQ"
+	secretKey100mRestrictedPolicy := "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"
+
+	var client backend.Backend
+	if config.Config.Remotes[0].S3Bucket == "s3git-100m" ||
+	config.Config.Remotes[0].S3Bucket == "s3git-100m-euc1-objs" ||
+	config.Config.Remotes[0].S3Bucket == "s3git-100m-euc1-json" {
+
+		client = s3.MakeClient(config.RemoteObject{S3Bucket: "lifedrive-100m-usw2", S3Region: "us-west-2",
+			S3AccessKey: accessKey100mRestrictedPolicy, S3SecretKey: secretKey100mRestrictedPolicy})
+
+		// Check whether blob is in lifedrive-100m-usw2 bucket, otherwise fall back to default
+		exists, err := client.VerifyHash(hash)
+		if err != nil {
+			return nil
+		}
+		if !exists {
+			client = nil	// fall back to default
+		}
+	}
+	return client
 }
 
 // Open the root hash of a blob
