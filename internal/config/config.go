@@ -67,15 +67,15 @@ func SaveConfig(dir string) error {
 	return saveNewConfig(dir, []RemoteObject{})
 }
 
-func SaveConfigFromUrl(url, dir string) error {
+func SaveConfigFromUrl(url, dir, accessKey, secretKey string) error {
 
 	parts := strings.Split(url, "//")
 	if len(parts) != 2 {
 		return errors.New(fmt.Sprintf("Bucket missing for cloning: %s", url))
 	}
 	bucket := parts[1]
-	accessKey := getDefaultValue("", "S3GIT_S3_ACCESS_KEY")
-	secretKey := getDefaultValue("", "S3GIT_S3_SECRET_KEY")
+	accessKey = getDefaultValue(accessKey, "S3GIT_S3_ACCESS_KEY")
+	secretKey = getDefaultValue(secretKey, "S3GIT_S3_SECRET_KEY")
 	region, err := GetRegionForBucket(bucket, accessKey, secretKey)
 	if err != nil {
 		return err

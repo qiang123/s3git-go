@@ -24,10 +24,35 @@ type treeOutput struct {
 	added []string
 }
 
-// Clone a remote repository
-func Clone(url, path string, progressDownloading, progressProcessing func(maxTicks int64)) (*Repository, error) {
+type cloneOptions struct {
+	accessKey string
+	secretKey string
+}
 
-	config.SaveConfigFromUrl(url, path)
+func CloneOptionSetAccessKey(accessKey string) func(optns *cloneOptions) {
+	return func(optns *cloneOptions) {
+		optns.accessKey = accessKey
+	}
+}
+
+func CloneOptionSetSecretKey(secretKey string) func(optns *cloneOptions) {
+	return func(optns *cloneOptions) {
+		optns.secretKey = secretKey
+	}
+}
+
+type CloneOptions func(*cloneOptions)
+
+// Clone a remote repository
+func Clone(url, path string, progressDownloading, progressProcessing func(maxTicks int64), options ...CloneOptions) (*Repository, error) {
+
+	// TODO: Move progressDownloading and progressProcessing into CloneOptions as well
+	optns := &cloneOptions{}
+	for _, op := range options {
+		op(optns)
+	}
+
+	config.SaveConfigFromUrl(url, path, optns.accessKey, optns.secretKey)
 
 	repo, err := OpenRepository(path)
 	if err != nil {
