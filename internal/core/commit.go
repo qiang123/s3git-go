@@ -18,13 +18,13 @@ import (
 
 type commitObject struct {
 	coreObject
-	S3gitMessage        string   `json:"s3gitMessage"`       // Message describing the commit (optional)
-	S3gitCommitterName  string   `json:"s3gitCommitterName"` // Name of person doing the commit (from git)
-	S3gitCommitterEmail string   `json:"s3gitCommitterName"` // Email of person doing the commit (from git)
-	S3gitBranch         string   `json:"s3gitBranch"`        // Name of the branch
-	S3gitTree           string   `json:"s3gitTree"`          // Tree object for the commit
-	S3gitWarmParents    []string `json:"s3gitWarmParents"`   // List of parent commits up the (possibly split) chain
-	S3gitColdParents    []string `json:"s3gitColdParents"`   // Parent commits that are no longer part of the chain
+	S3gitMessage        string   `json:"s3gitMessage"`        // Message describing the commit (optional)
+	S3gitCommitterName  string   `json:"s3gitCommitterName"`  // Name of person doing the commit (from git)
+	S3gitCommitterEmail string   `json:"s3gitCommitterEmail"` // Email of person doing the commit (from git)
+	S3gitBranch         string   `json:"s3gitBranch"`         // Name of the branch
+	S3gitTree           string   `json:"s3gitTree"`           // Tree object for the commit
+	S3gitWarmParents    []string `json:"s3gitWarmParents"`    // List of parent commits up the (possibly split) chain
+	S3gitColdParents    []string `json:"s3gitColdParents"`    // Parent commits that are no longer part of the chain
 	S3gitTimeStamp      string   `json:"s3gitTimeStamp"`
 	S3gitPadding        string   `json:"s3gitPadding"`
 }
