@@ -27,6 +27,7 @@ type treeOutput struct {
 type cloneOptions struct {
 	accessKey string
 	secretKey string
+	endpoint  string
 }
 
 func CloneOptionSetAccessKey(accessKey string) func(optns *cloneOptions) {
@@ -41,6 +42,12 @@ func CloneOptionSetSecretKey(secretKey string) func(optns *cloneOptions) {
 	}
 }
 
+func CloneOptionSetEndpoint(endpoint string) func(optns *cloneOptions) {
+	return func(optns *cloneOptions) {
+		optns.endpoint = endpoint
+	}
+}
+
 type CloneOptions func(*cloneOptions)
 
 // Clone a remote repository
@@ -52,7 +59,7 @@ func Clone(url, path string, progressDownloading, progressProcessing func(maxTic
 		op(optns)
 	}
 
-	config.SaveConfigFromUrl(url, path, optns.accessKey, optns.secretKey)
+	config.SaveConfigFromUrl(url, path, optns.accessKey, optns.secretKey, optns.endpoint)
 
 	repo, err := OpenRepository(path)
 	if err != nil {

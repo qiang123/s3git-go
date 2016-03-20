@@ -12,7 +12,24 @@ type Remote struct {
 	Resource string
 }
 
-func (repo Repository) RemoteAdd(name, resource, accessKey, secretKey string) error {
+type remoteOptions struct {
+	endpoint string
+}
+
+func RemoteOptionSetEndpoint(endpoint string) func(optns *remoteOptions) {
+	return func(optns *remoteOptions) {
+		optns.endpoint = endpoint
+	}
+}
+
+type RemoteOptions func(*remoteOptions)
+
+func (repo Repository) RemoteAdd(name, resource, accessKey, secretKey string, options ...RemoteOptions) error {
+
+	optns := &remoteOptions{}
+	for _, op := range options {
+		op(optns)
+	}
 
 	// TODO: 'Ping' remote to check credentials
 
@@ -21,12 +38,23 @@ func (repo Repository) RemoteAdd(name, resource, accessKey, secretKey string) er
 		return errors.New(fmt.Sprintf("Bad resource for cloning (missing '//' separator): %s", resource))
 	}
 
-	region, err := config.GetRegionForBucket(parts[1], accessKey, secretKey)
-	if err != nil {
-		return err
+	var region, endpoint string
+	if optns.endpoint == "" {
+		// Just look for region when endpoint not explicitly specified
+		var err error
+		region, err = config.GetRegionForBucket(parts[1], accessKey, secretKey)
+		if err != nil {
+			return err
+		}
+	} else {
+		endpoint = optns.endpoint
 	}
 
-	return config.AddRemote(name, parts[1], region, accessKey, secretKey)
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	return config.AddRemote(name, parts[1], region, accessKey, secretKey, endpoint)
 }
 
 func (repo Repository) RemotesShow() ([]Remote, error) {

@@ -42,8 +42,8 @@ type RemoteObject struct {
 	S3Region    string `json:"S3Region"`
 	S3AccessKey string `json:"S3AccessKey"`
 	S3SecretKey string `json:"S3SecretKey"`
+	S3Endpoint  string `json:"S3Endpoint"`
 
-	MinioEndpoint string `json:"MinioEndpoint"`
 	MinioInsecure bool   `json:"MinioInsecure"`
 
 	AcdRefreshToken string `json:"AcdRefreshToken"`
@@ -74,7 +74,7 @@ func SaveConfig(dir string) error {
 	return saveNewConfig(dir, []RemoteObject{})
 }
 
-func SaveConfigFromUrl(url, dir, accessKey, secretKey string) error {
+func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string) error {
 
 	parts := strings.Split(url, "//")
 	if len(parts) != 2 {
@@ -83,14 +83,21 @@ func SaveConfigFromUrl(url, dir, accessKey, secretKey string) error {
 	bucket := parts[1]
 	accessKey = getDefaultValue(accessKey, "S3GIT_S3_ACCESS_KEY")
 	secretKey = getDefaultValue(secretKey, "S3GIT_S3_SECRET_KEY")
-	region, err := GetRegionForBucket(bucket, accessKey, secretKey)
-	if err != nil {
-		return err
+	endpoint = getDefaultValue(endpoint, "S3GIT_S3_ENDPOINT")
+	var region string
+	if endpoint == "" {
+		var err error
+		region, err = GetRegionForBucket(bucket, accessKey, secretKey)
+		if err != nil {
+			return err
+		}
+	} else {
+		region = "us-east-1"	// TODO: Remove hard-coded region for endpoints
 	}
 	region = getDefaultValue(region, "S3GIT_S3_REGION")	// Allow to be overriden when set explicitly
 
 	remotes := []RemoteObject{}
-	remotes = append(remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, MinioInsecure: true})
+	remotes = append(remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
 
 	return saveNewConfig(dir, remotes)
 }
@@ -123,7 +130,7 @@ func saveConfig(configObject ConfigObject, remotes []RemoteObject) error {
 	return nil
 }
 
-func AddRemote(name, bucket, region, accessKey, secretKey string) error {
+func AddRemote(name, bucket, region, accessKey, secretKey, endpoint string) error {
 
 	for _, r := range Config.Remotes {
 		if r.Name == name {
@@ -137,7 +144,7 @@ func AddRemote(name, bucket, region, accessKey, secretKey string) error {
 	}
 
 	remotes := []RemoteObject{}
-	remotes = append(remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, MinioInsecure: true})
+	remotes = append(remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
 
 	return saveConfig(Config, remotes)
 }

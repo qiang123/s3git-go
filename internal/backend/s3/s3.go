@@ -17,11 +17,16 @@ type Client struct {
 	Region     string
 	AccessKey  string
 	SecretKey  string
+	Endpoint   string
 }
 
 func MakeClient(remote config.RemoteObject) *Client {
 
-	return &Client{Bucket: remote.S3Bucket, Region: remote.S3Region, AccessKey: remote.S3AccessKey, SecretKey: remote.S3SecretKey}
+	return &Client{
+		Bucket: remote.S3Bucket,
+		Region: remote.S3Region,
+		AccessKey: remote.S3AccessKey, SecretKey: remote.S3SecretKey,
+		Endpoint: remote.S3Endpoint}
 }
 
 // Upload a file to S3
@@ -106,5 +111,17 @@ func (l *lister) eachPage(page *s3.ListObjectsOutput, more bool) bool {
 }
 
 func (c *Client) getAwsConfig() *aws.Config {
-	return &aws.Config{Credentials: credentials.NewStaticCredentials(c.AccessKey, c.SecretKey, ""), Region: aws.String(c.Region)}
+
+	s3Config := &aws.Config{
+		Credentials: credentials.NewStaticCredentials(c.AccessKey, c.SecretKey, ""),
+		Region: aws.String(c.Region)}
+
+	if c.Endpoint != "" {
+		s3Config.Endpoint = aws.String(c.Endpoint)
+		s3Config.Region = aws.String("us-east-1")	// TODO: Remove hard-coded region for endpoints
+		s3Config.DisableSSL = aws.Bool(true)
+		s3Config.S3ForcePathStyle = aws.Bool(true)
+	}
+
+	return s3Config
 }
