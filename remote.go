@@ -14,6 +14,8 @@ type Remote struct {
 
 func (repo Repository) RemoteAdd(name, resource, accessKey, secretKey string) error {
 
+	// TODO: 'Ping' remote to check credentials
+
 	parts := strings.Split(resource, "//")
 	if len(parts) != 2 {
 		return errors.New(fmt.Sprintf("Bad resource for cloning (missing '//' separator): %s", resource))
