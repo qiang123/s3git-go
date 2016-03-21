@@ -239,9 +239,62 @@ func PullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]by
 	}
 	defer os.Remove(name)
 
-	return StoreBlobInCache(name, objType)
+	deduped, leaves, err := testForDedupedBlob(hash, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if deduped {
+		// TODO: Probably we do not want to fetch all blobs at once( maybe a couple), rather just the first one and let the others be fetched 'on demand'
+		for _, l := range leaves {
+			err := FetchLeafBlob(l.String(), client)
+			if err != nil {
+				return nil, err
+			}
+		}
+		leafHashes := make([]byte, len(leaves)*KeySize)
+		// TODO: Remove ugly 'recopying' back to byte array, instead return []Key directly
+		for index, l := range leaves {
+			copy(leafHashes[index*KeySize:(index+1)*KeySize], l.object[:])
+		}
+		return leafHashes, nil
+	} else {
+		return StoreBlobInCache(name, objType)
+	}
 }
 
+// Test whether the blob has been stored in deduped manner (as opposed to hydrated manner)
+func testForDedupedBlob(hash, filename string) (bool, []Key, error) {
+
+	stat, err := os.Stat(filename)
+	if err != nil {
+		return false, nil, err
+	}
+
+	// Check whether the size is a multiple of 64 bytes
+	if stat.Size() & (KeySize-1) != 0 {
+		return false, nil, nil
+	}
+
+	// Otherwise compute the level 1 hash on the contents
+	leafHashes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return false, nil, err
+	}
+
+	leaves := make([]Key, 0, len(leafHashes)/KeySize)
+	for i := 0; i < len(leafHashes); i += KeySize {
+		leaves = append(leaves, NewKey(leafHashes[i:i+KeySize]))
+	}
+
+	rootStr, err := computeRootBlake2(leaves)
+	if err != nil {
+		return false, nil, err
+	}
+
+	// Now if hashes equal it must be deduped format
+	return hash == rootStr, leaves, nil
+}
 
 func min(a, b int) int {
 	if a < b {

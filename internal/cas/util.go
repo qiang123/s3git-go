@@ -55,6 +55,32 @@ func PushLeafBlob(hash string, client backend.Backend) error {
 	return nil
 }
 
+// Fetch a low level leaf node from a remote back end
+func FetchLeafBlob(hash string, client backend.Backend) error {
+
+	filename := getBlobPathWithinArea(hash, cacheDir)
+
+	if _, err := os.Stat(filename); err == nil {
+		// File already exists --> no need to download again
+		return nil
+	}
+
+	// Otherwise create file
+	file, err := createBlobFile(hash, cacheDir)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// And download
+	err = client.DownloadWithWriter(hash, file)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Get the filepath for a given hash in either the .stage or .cache area
 func getBlobPathWithinArea(hash, area string) string {
 	return path.Join(config.Config.CasPath, area, hash[0:2], hash[2:4], hash[4:])
