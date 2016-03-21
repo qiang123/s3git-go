@@ -29,9 +29,10 @@ func OpenRepository(path string) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	if success {
-		kv.OpenDatabase()
+	if !success {
+		return nil, errors.New("Not an s3git repository -- did you 's3git init' this directory?")
 	}
+	kv.OpenDatabase()
 
 	return &Repository{}, nil
 }
