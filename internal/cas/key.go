@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 )
 
-const stageDir = ".stage"
-const cacheDir = ".cache"
+const stageDir = "stage"
+const cacheDir = "cache"
 
 const BLOB = "blob"
 

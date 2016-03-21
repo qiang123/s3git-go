@@ -187,7 +187,7 @@ func clone(client backend.Backend, progressDownloading, progressProcessing func(
 
 // Name for temp files storing blob hashes
 func hiddenKeyFilename(index int) string {
-	return fmt.Sprintf("%s/.keys-0x%02x.dat", path.Join(config.Config.CasPath), index)
+	return fmt.Sprintf("%s/.keys-0x%02x.dat", path.Join(config.Config.BasePath, config.S3GIT_DIR), index)
 }
 
 func appendBytes(slice []byte, data []byte) []byte {

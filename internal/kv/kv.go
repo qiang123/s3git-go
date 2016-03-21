@@ -33,7 +33,7 @@ var dbiLevel1CommitsIsParent mdb.DBI
 
 func OpenDatabase() error {
 
-	mdbDir := path.Join(config.Config.CasPath, ".mdb")
+	mdbDir := path.Join(config.Config.BasePath, config.S3GIT_DIR, "mdb")
 	err := os.MkdirAll(mdbDir, os.ModePerm)
 	if err != nil {
 		return err

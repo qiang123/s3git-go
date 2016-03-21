@@ -150,7 +150,7 @@ func createBlobFile(hash, areaDir string) (*os.File, error) {
 
 	checkRepoSize()
 
-	hashDir := path.Join(config.Config.CasPath, areaDir, hash[0:2], hash[2:4]) + "/"
+	hashDir := path.Join(config.Config.BasePath, config.S3GIT_DIR, areaDir, hash[0:2], hash[2:4]) + "/"
 	err := os.MkdirAll(hashDir, os.ModePerm)
 	if err != nil {
 		return nil, err

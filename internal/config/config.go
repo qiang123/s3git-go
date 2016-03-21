@@ -14,14 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-// TODO: move everything into a .s3git directory (but then we have an empty repo/CashPath dir)
-// like so:
-// .s3git/config
-// .s3git/mdb
-// .s3git/cache
-// .s3git/stage
-
 const S3GIT_CONFIG = ".s3git.config"
+const S3GIT_DIR = ".s3git"
 const CONFIG = "config"
 
 var Config ConfigObject
@@ -29,7 +23,7 @@ var Config ConfigObject
 type ConfigObject struct {
 	Version         int            `json:"s3gitVersion"`
 	Type            string         `json:"s3gitType"` // config
-	CasPath         string         `json:"s3gitCasPath"`
+	BasePath        string         `json:"s3gitBasePath"`
 	RollingHashBits int            `json:"s3gitRollingHashBits"`
 	RollingHashMin  int            `json:"s3gitRollingHashMin"`
 	Remotes         []RemoteObject `json:"s3gitRemotes"`
@@ -104,7 +98,7 @@ func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string) error {
 
 func saveNewConfig(dir string, remotes []RemoteObject) error {
 
-	configObject := ConfigObject{Version: 1, Type: CONFIG, CasPath: dir}
+	configObject := ConfigObject{Version: 1, Type: CONFIG, BasePath: dir}
 
 	return saveConfig(configObject, remotes)
 }
@@ -122,7 +116,7 @@ func saveConfig(configObject ConfigObject, remotes []RemoteObject) error {
 		return err
 	}
 
-	err := ioutil.WriteFile(getConfigFile(configObject.CasPath), buf.Bytes(), os.ModePerm)
+	err := ioutil.WriteFile(getConfigFile(configObject.BasePath), buf.Bytes(), os.ModePerm)
 	if err != nil {
 		return err
 	}
