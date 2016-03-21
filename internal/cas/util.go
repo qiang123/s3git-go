@@ -99,7 +99,14 @@ func MoveBlobToCache(hash string) error {
 
 		oldPath := getBlobPathWithinArea(leaveHash, stageDir)
 		if _, err := os.Stat(oldPath); os.IsNotExist(err) {
-			return err
+			// Chunk is not available in staging dir, verify that it is already in cache or return error otherwise
+			cachePath := getBlobPathWithinArea(leaveHash, cacheDir)
+			if _, errCache := os.Stat(cachePath); os.IsNotExist(errCache) {
+				// Return error as chunk is also not in caching dir
+				return err
+			} else {
+				return nil
+			}
 		}
 
 		hashDir := path.Join(config.Config.BasePath, config.S3GIT_DIR, cacheDir, leaveHash[0:2], leaveHash[2:4]) + "/"
