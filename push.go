@@ -13,6 +13,7 @@ import (
 	"encoding/hex"
 	"github.com/dustin/go-humanize"
 	"sync"
+	"bytes"
 )
 
 // Perform a push to the back end for the repository
@@ -82,7 +83,7 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 		}
 
 		// first push all added blobs in this commit ...
-		err = pushBlobRange(to.S3gitAdded, nil, client)
+		err = pushBlobRange(to.S3gitAdded, nil, hydrated, client)
 		if err != nil {
 			return err
 		}
@@ -140,8 +141,6 @@ func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded 
 
 	// TODO: for back ends storing whole files: consider multipart upload?
 
-	// TODO: implement back ends that store chunks (not whole files)
-	// TODO: for back ends storing chunks: consider uploading chunks in parallel
 	cr := cas.MakeReader(hash)
 	if cr == nil {
 		panic(errors.New("Failed to create cas reader"))
@@ -165,6 +164,52 @@ func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded 
 	return true, nil
 }
 
+// Push a blob to the back end store in deduplicated format
+func PushBlobDeduped(hash string, size *uint64, client backend.Backend) (newlyUploaded bool, err error) {
+
+	// TODO: for back ends storing chunks: consider uploading chunks in parallel
+
+	hx, err := hex.DecodeString(hash)
+	if err != nil {
+		return false, err
+	}
+
+	// Get hashes for leaves
+	leafHashes, _, err := kv.GetLevel1(hx)
+	if err != nil {
+		return false, err
+	} else if len(leafHashes) == 0 {
+		return false, errors.New(fmt.Sprintf("Unable to push an empty blob: %s", hash))
+	}
+
+	// Iterate over the leaves and push up to remote
+	for i := 0; i < len(leafHashes); i += cas.KeySize {
+
+		// TODO: verify whether leaf blob is already in back end, and skip if so
+		err := cas.PushLeafBlob(hex.EncodeToString(leafHashes[i:i+cas.KeySize]), client)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	// Finally upload root hash
+	b := bytes.NewBuffer(leafHashes)
+	err = client.UploadWithReader(hash, b)
+	if err != nil {
+		return false, err
+	}
+
+	// TODO: Duplicate code with function above -- consider merging functions/common code
+	// Move blob from .stage to .cache directory upon successful upload
+	err = cas.MoveBlobToCache(hash)
+	if err != nil {
+		//fmt.Println(startOfLine, "failed to move underlying blobs to cache", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
 func minu64(x, y uint64) uint64 {
 	if x < y {
 		return x
@@ -176,7 +221,7 @@ func minu64(x, y uint64) uint64 {
 //
 // See https://github.com/adonovan/gopl.io/blob/master/ch8/thumbnail/thumbnail_test.go
 //
-func pushBlobRange(hashes []string, size *uint64, client backend.Backend) error {
+func pushBlobRange(hashes []string, size *uint64, hydrated bool, client backend.Backend) error {
 
 	var wg sync.WaitGroup
 	var msgs = make(chan string)
@@ -188,7 +233,17 @@ func pushBlobRange(hashes []string, size *uint64, client backend.Backend) error 
 		go func() {
 			defer wg.Done()
 			for hash := range msgs {
-				_, err := pushBlob(hash, size, client)
+
+				pushHydratedToRemote := hydrated
+				if !checkIfLeavesAreEqualSize(hash) {
+					pushHydratedToRemote = false	// Cannot push hydrated to remote back end when eg rolling hash is used (as we do not know where the boundaries are)
+				}
+				var err error
+				if pushHydratedToRemote {
+					_, err = pushBlob(hash, size, client)
+				} else {
+					_, err = PushBlobDeduped(hash, size, client)
+				}
 				results <- err
 			}
 		}()
@@ -214,6 +269,11 @@ func pushBlobRange(hashes []string, size *uint64, client backend.Backend) error 
 	}
 
 	return err
+}
+
+func checkIfLeavesAreEqualSize(hash string) bool {
+	// TODO: Implement: iterate over all leaves, check whether (except for last node) all sizes are equal
+	return true
 }
 
 // List prefixes at back end store, doing 16 lists in parallel
