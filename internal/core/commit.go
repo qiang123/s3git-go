@@ -79,15 +79,6 @@ func (co *commitObject) MarkWarmAndColdParents() error {
 	return nil
 }
 
-func isCommit(hash string) bool {
-
-	// TODO: Verify that this hash is a commit object
-	// 1. in case size of object is not a multiple of KeySize --> not a commit object
-	// otherwise:
-	// 2. try to load as json object --> ok: true
-	return true
-}
-
 // Return commit object based on hash
 func GetCommitObject(hash string) (*commitObject, error) {
 
