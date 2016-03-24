@@ -19,20 +19,20 @@ package s3git
 import (
 	"encoding/hex"
 	"fmt"
-	"path"
 	"github.com/s3git/s3git-go/internal/backend"
+	"github.com/s3git/s3git-go/internal/cas"
 	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
 	"io/ioutil"
 	"os"
+	"path"
 	"sort"
 	"sync"
-	"github.com/s3git/s3git-go/internal/cas"
 )
 
 type treeInput struct {
-	hash string
+	hash   string
 	client backend.Backend
 }
 
@@ -41,9 +41,11 @@ type treeOutput struct {
 }
 
 type cloneOptions struct {
-	accessKey string
-	secretKey string
-	endpoint  string
+	accessKey           string
+	secretKey           string
+	endpoint            string
+	progressDownloading func(maxTicks int64)
+	progressProcessing  func(maxTicks int64)
 }
 
 func CloneOptionSetAccessKey(accessKey string) func(optns *cloneOptions) {
@@ -64,12 +66,23 @@ func CloneOptionSetEndpoint(endpoint string) func(optns *cloneOptions) {
 	}
 }
 
+func CloneOptionSetDownloadProgress(progressDownloading func(maxTicks int64)) func(optns *cloneOptions) {
+	return func(optns *cloneOptions) {
+		optns.progressDownloading = progressDownloading
+	}
+}
+
+func CloneOptionSetProcessingProgress(progressProcessing func(maxTicks int64)) func(optns *cloneOptions) {
+	return func(optns *cloneOptions) {
+		optns.progressProcessing = progressProcessing
+	}
+}
+
 type CloneOptions func(*cloneOptions)
 
 // Clone a remote repository
-func Clone(url, path string, progressDownloading, progressProcessing func(maxTicks int64), options ...CloneOptions) (*Repository, error) {
+func Clone(url, path string, options ...CloneOptions) (*Repository, error) {
 
-	// TODO: Move progressDownloading and progressProcessing into CloneOptions as well
 	optns := &cloneOptions{}
 	for _, op := range options {
 		op(optns)
@@ -87,7 +100,7 @@ func Clone(url, path string, progressDownloading, progressProcessing func(maxTic
 		return nil, err
 	}
 
-	err = clone(client, progressDownloading, progressProcessing)
+	err = clone(client, optns.progressDownloading, optns.progressProcessing)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +238,7 @@ func cacheKeyForBlobsToLocalDiskFirst(added []string) error {
 	keyArray := make([][]byte, 256)
 
 	for index, _ := range keyArray {
-		keyArray[index] = make([]byte, 0, treeBatchSize * cas.KeySize)
+		keyArray[index] = make([]byte, 0, treeBatchSize*cas.KeySize)
 	}
 
 	count := 0
@@ -319,7 +332,7 @@ func sortAndImportKeys(progressProcessing func(maxTicks int64)) error {
 		w1, _ := ioutil.ReadFile(keyfilename)
 		array := make([][]byte, len(w1)/cas.KeySize)
 		for i := 0; i < len(array); i++ {
-			array[i] = w1[cas.KeySize*i:cas.KeySize*(i+1)]
+			array[i] = w1[cas.KeySize*i : cas.KeySize*(i+1)]
 		}
 		w2 := sortKeysFunc(array)
 
