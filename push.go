@@ -24,10 +24,8 @@ import (
 	"github.com/s3git/s3git-go/internal/cas"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
-	"github.com/s3git/s3git-go/internal/util"
 
 	"encoding/hex"
-	"github.com/dustin/go-humanize"
 	"sync"
 	"bytes"
 )
@@ -133,30 +131,17 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 // Push a blob to the back end store
 func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded bool, err error) {
 
-	startOfLine := ""
-	if size != nil {
-		startOfLine = fmt.Sprintf("Uploading %s (%s)", util.FriendlyHash(hash), humanize.Bytes(*size))
-	} else {
-		startOfLine = fmt.Sprintf("Uploading %s", util.FriendlyHash(hash))
-	}
-
 	// TODO: Consider whether we want to verify again...
 	if false {
 		verified, err := client.VerifyHash(hash)
 		if err != nil {
-			fmt.Println(startOfLine, "verification failed", err)
 			return false, err
-		}
-
-		if verified { // Resource already in back-end
-			fmt.Println(startOfLine, "already in store")
-
+		} else if verified { // Resource already in back-end
 			return false, nil
 		}
 	}
 
 	// TODO: for back ends storing whole files: consider multipart upload?
-
 	cr := cas.MakeReader(hash)
 	if cr == nil {
 		panic(errors.New("Failed to create cas reader"))
@@ -164,18 +149,14 @@ func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded 
 
 	err = client.UploadWithReader(hash, cr)
 	if err != nil {
-		fmt.Println(startOfLine, "failed to upload to store", err)
 		return false, err
 	}
 
 	// Move blob from .stage to .cache directory upon successful upload
 	err = cas.MoveBlobToCache(hash)
 	if err != nil {
-		fmt.Println(startOfLine, "failed to move underlying blobs to cache", err)
 		return false, err
 	}
-
-	//fmt.Println(startOfLine, "successfully uploaded to store")
 
 	return true, nil
 }
@@ -215,11 +196,9 @@ func PushBlobDeduped(hash string, size *uint64, client backend.Backend) (newlyUp
 		return false, err
 	}
 
-	// TODO: Duplicate code with function above -- consider merging functions/common code
 	// Move blob from .stage to .cache directory upon successful upload
 	err = cas.MoveBlobToCache(hash)
 	if err != nil {
-		//fmt.Println(startOfLine, "failed to move underlying blobs to cache", err)
 		return false, err
 	}
 
