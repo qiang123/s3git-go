@@ -1,6 +1,8 @@
 s3git-go
 ========
 
+[![Join the chat at https://gitter.im/s3git/s3git](https://badges.gitter.im/s3git/s3git.svg)](https://gitter.im/s3git/s3git?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This is the go SDK package for s3git.
 
 Create a repository
@@ -85,3 +87,13 @@ import "github.com/s3git/s3git-go"
 repo, _ := s3git.Clone("s3://s3git-100m", ".")
 
 ```
+
+Contributions
+-------------
+
+Contributions are welcome! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+License
+-------
+
+s3git-go is released under the Apache License v2.0. You can find the complete text in the file LICENSE.
