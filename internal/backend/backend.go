@@ -34,6 +34,13 @@ type Backend interface {
 func GetDefaultClient() (Backend, error) {
 
 	if len(config.Config.Remotes) == 0 {
+
+		// TODO: Give proper error when AWS credentials are incorrect
+		//
+		// $ s3git clone s3://s3git-100m-euc1-objs -a "AKIAI26TSIF6JIMMDSPQ" -s "5NvshAhI0KMz5Gbqkp7WNqXYlnjBjkf9IaJD75x7"
+		// Cloning into /home/ec2-user/golang/src/github.com/s3git/test/s3git-100m-euc1-objs
+		// Error: No remotes configured
+
 		return nil, errors.New("No remotes configured")
 	}
 	return s3.MakeClient(config.Config.Remotes[0]), nil
