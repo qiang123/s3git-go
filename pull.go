@@ -69,7 +69,6 @@ func pull(progress func(maxTicks int64)) error {
 	progress(int64(len(prefixesToFetch)))
 
 	// TODO: Speedup by running parallel in multiple go routines
-	// TODO: Add progress feedback
 	for _, prefix := range prefixesToFetch {
 
 		// Fetch Prefix object and all objects directly and indirectly referenced by it
