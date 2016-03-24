@@ -26,7 +26,7 @@ import (
 )
 
 // TODO: Think about how to deal with S3 test bucket (or make fake 'back-end' that runs locally in temp storage)
-// TODO: Do proper test that does not rely on external (S3) state
+// TODO: Do stand alone test that does not rely on external (S3) state
 func TestPull(t *testing.T) {
 	repo, path := setupRepo()
 	fmt.Println(path)

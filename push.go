@@ -183,7 +183,7 @@ func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded 
 // Push a blob to the back end store in deduplicated format
 func PushBlobDeduped(hash string, size *uint64, client backend.Backend) (newlyUploaded bool, err error) {
 
-	// TODO: for back ends storing chunks: consider uploading chunks in parallel
+	// TODO: for back ends storing chunks: upload chunks in parallel
 
 	hx, err := hex.DecodeString(hash)
 	if err != nil {

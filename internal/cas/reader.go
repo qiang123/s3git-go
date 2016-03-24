@@ -261,7 +261,7 @@ func PullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]by
 	}
 
 	if deduped {
-		// TODO: Probably we do not want to fetch all blobs at once( maybe a couple), rather just the first one and let the others be fetched 'on demand'
+		// TODO: Probably we do not want to fetch all blobs at once (maybe a couple), rather just the first one and let the others be fetched 'on demand'
 		for _, l := range leaves {
 			err := FetchLeafBlob(l.String(), client)
 			if err != nil {

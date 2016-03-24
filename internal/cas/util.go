@@ -26,7 +26,7 @@ import (
 // Upon writing, make sure the size of the repository does not exceed the max local size,
 // prune stale chunks otherwise
 func checkRepoSize() {
-	// TODO: Implement
+	// TODO: Implement maximum size that repo can grow to
 }
 
 // Get the filepath for a given hash
