@@ -226,13 +226,6 @@ func PushBlobDeduped(hash string, size *uint64, client backend.Backend) (newlyUp
 	return true, nil
 }
 
-func minu64(x, y uint64) uint64 {
-	if x < y {
-		return x
-	}
-	return y
-}
-
 // Push a range of blobs to the back end store in parallel
 //
 // See https://github.com/adonovan/gopl.io/blob/master/ch8/thumbnail/thumbnail_test.go
