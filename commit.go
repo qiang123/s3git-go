@@ -115,7 +115,6 @@ func (repo Repository) commitWithWarmAndColdParents(message, branch string, warm
 // List the commits for a repository
 func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 
-	// TODO: Implement support for branches
 	commits, err := kv.ListTopMostCommits()
 	if err != nil {
 		return nil, err
