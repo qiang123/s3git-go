@@ -59,7 +59,7 @@ var (
 	prefixCheat = 3		// Number that is cheated in the prefix, like 0000xxx00000 -- will fail in file check mode
 )
 
-func prefix() string {
+func Prefix() string {
 	return strings.Repeat(string(prefixChar), prefixNum)
 }
 
@@ -151,7 +151,7 @@ func bruteForce(obj string, winner chan<- solution, possibilities <-chan try, do
 	}
 	leafHash := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: cas.ChunkSize, NodeOffset: 0, NodeDepth: 0, InnerHashSize: 64, IsLastNode: true}})
 	rootHash := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: cas.ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
-	wantHexPrefix := []byte(prefix())[:prefixNum-prefixCheat]
+	wantHexPrefix := []byte(Prefix())[:prefixNum-prefixCheat]
 	hexBuf := make([]byte, 0, cas.KeySizeHex)
 
 	input := obj

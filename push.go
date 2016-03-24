@@ -305,8 +305,7 @@ func listPrefixes(client backend.Backend) (map[string]bool, error) {
 			defer wg.Done()
 			result := make([]string, 0, 1000)
 
-			// TODO: Hard coded prefix of 7 zero's
-			client.List(fmt.Sprintf("0000000%x", i), func(key string) {
+			client.List(fmt.Sprintf("%s%x", core.Prefix(), i), func(key string) {
 				result = append(result, key)
 
 				// TODO: WE NEED TO wg.Done() HERE WHEN LAST KEY HAS BEEN RECEIVED
