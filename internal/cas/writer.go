@@ -25,7 +25,7 @@ import (
 	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/kv"
 	"encoding/hex"
-	mdb "github.com/szferi/gomdb"
+	"github.com/bmatsuo/lmdb-go/lmdb"
 )
 
 func MakeWriter(objType string) *Writer {
@@ -125,11 +125,11 @@ func (cw *Writer) Flush() (string, []byte, bool, error) {
 
 	key, _ := hex.DecodeString(rootStr)
 	val, _, err := kv.GetLevel1(key)
-	if err != nil && !(err == mdb.NotFound) {
+	if err != nil && !lmdb.IsNotFound(err) {
 		return "", nil, false, err
 	}
-	newBlob := err == mdb.NotFound
-	newBlob = newBlob || len(val) == 0	// Also write leafHashes to KV database when no leafHashes were stored previously (BLOB was not pulled down)
+	newBlob := lmdb.IsNotFound(err) ||
+	           len(val) == 0	// Also write leafHashes to KV database when no leafHashes were stored previously (BLOB was not pulled down)
 
 	if newBlob {
 		err := kv.AddToLevel1(key, leafHashes, cw.objType)

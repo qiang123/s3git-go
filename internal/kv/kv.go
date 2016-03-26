@@ -20,12 +20,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/config"
-	mdb "github.com/szferi/gomdb"
+	"github.com/bmatsuo/lmdb-go/lmdb"
 	"os"
 	"path"
 )
 
-var env *mdb.Env
+// TODO: Use new transaction style for lmdb
+
+var env *lmdb.Env
 
 // KV databases containing root level digests for different object types
 // When a particular key is present, the value is as follows:
@@ -36,16 +38,16 @@ var env *mdb.Env
 // If you know the type of the key, you can fetch it directly for the corresponding database
 // If you do not know the type, you need to search all stores
 
-var dbiLevel1Blobs mdb.DBI
-var dbiLevel1Commits mdb.DBI
-var dbiLevel1Prefixes mdb.DBI
-var dbiLevel1Trees mdb.DBI
+var dbiLevel1Blobs lmdb.DBI
+var dbiLevel1Commits lmdb.DBI
+var dbiLevel1Prefixes lmdb.DBI
+var dbiLevel1Trees lmdb.DBI
 
 // KV database containing overview of added/removed blobs in stage
-var dbiStage mdb.DBI
+var dbiStage lmdb.DBI
 
 // KV database that marks commits objects as being a parent commit
-var dbiLevel1CommitsIsParent mdb.DBI
+var dbiLevel1CommitsIsParent lmdb.DBI
 
 func OpenDatabase() error {
 
@@ -55,37 +57,54 @@ func OpenDatabase() error {
 		return err
 	}
 
-	env, _ = mdb.NewEnv()
+	env, _ = lmdb.NewEnv()
 	// TODO: Figure out proper size for lmdb
 	// TODO: Windows: max size is capped at 32
 	env.SetMapSize(1 << 36) // max file size
 	env.SetMaxDBs(10)       // up to 10 named databases
 	env.Open(mdbDir, 0, 0664)
-	txn, _ := env.BeginTxn(nil, 0)
 
-	// overview of blobs in stage
-	dbstage := "stage"
-	dbiStage, _ = txn.DBIOpen(&dbstage, mdb.CREATE)
+	err = env.Update(func(txn *lmdb.Txn) (err error) {
 
-	// Level 1 databases
-	dbl1blobs := "l1blobs"
-	dbiLevel1Blobs, _ = txn.DBIOpen(&dbl1blobs, mdb.CREATE)
-	dbl1commits := "l1commits"
-	dbiLevel1Commits, _ = txn.DBIOpen(&dbl1commits, mdb.CREATE)
-	dbl1prefixes := "l1prefixes"
-	dbiLevel1Prefixes, _ = txn.DBIOpen(&dbl1prefixes, mdb.CREATE)
-	dbl1trees := "l1trees"
-	dbiLevel1Trees, _ = txn.DBIOpen(&dbl1trees, mdb.CREATE)
+		// overview of blobs in stage
+		dbiStage, err = txn.OpenDBI("stage", lmdb.Create)
+		if err != nil {
+			return err
+		}
 
-	// list of top most commits
-	dbcommitsisparents := "l1commitsisparent"
-	dbiLevel1CommitsIsParent, _ = txn.DBIOpen(&dbcommitsisparents, mdb.CREATE)
+		// Level 1 databases
+		dbiLevel1Blobs, err = txn.OpenDBI("l1blobs", lmdb.Create)
+		if err != nil {
+			return err
+		}
+		dbiLevel1Commits, err = txn.OpenDBI("l1commits", lmdb.Create)
+		if err != nil {
+			return err
+		}
+		dbiLevel1Prefixes, err = txn.OpenDBI("l1prefixes", lmdb.Create)
+		if err != nil {
+			return err
+		}
+		dbiLevel1Trees, err = txn.OpenDBI("l1trees", lmdb.Create)
+		if err != nil {
+			return err
+		}
 
-	txn.Commit()
+		// list of top most commits
+		dbiLevel1CommitsIsParent, _ = txn.OpenDBI("l1commitsisparent", lmdb.Create)
 
-	// TODO: Make sure all databases are flushed before exiting program
-	//	defer env.DBIClose(dbi)
-	//	defer env.Close()
+		return nil
+	})
+	if err != nil {
+		// ...
+	}
+
+	// From https://godoc.org/github.com/bmatsuo/lmdb-go/lmdb
+	//   A database is referenced by an opaque handle known as its DBI which
+	//   must be opened inside a transaction with the OpenDBI or OpenRoot methods.
+	//   DBIs may be closed but it is not required. Typically, applications acquire
+	//   handles for all their databases immediately after opening an environment
+	//   and retain them for the lifetime of the process.
 
 	return nil
 }
@@ -135,17 +154,17 @@ func MarkCommitAsParent(key string) error {
 
 func CommitIsParent(key []byte) (bool, error) {
 
-	txn, _ := env.BeginTxn(nil, mdb.RDONLY)
+	txn, _ := env.BeginTxn(nil, lmdb.Readonly)
 	defer txn.Abort()
 
 	_, err := txn.Get(dbiLevel1CommitsIsParent, key)
-	if err != nil && !(err == mdb.NotFound) {
+	if err != nil && !lmdb.IsNotFound(err) {
 		return false, err
-	} else if !(err == mdb.NotFound) {
+	} else if !lmdb.IsNotFound(err) {
 		return true, err
 	}
 
-	return false, mdb.NotFound
+	return false, lmdb.NotFound
 }
 
 func ListTopMostCommits() (<-chan []byte, error) {
@@ -163,7 +182,7 @@ func ListTopMostCommits() (<-chan []byte, error) {
 
 		for l := range list {
 			isParent, err := CommitIsParent(l)
-			if err != nil && err != mdb.NotFound {
+			if err != nil && !lmdb.IsNotFound(err) {
 				return
 			}
 
@@ -198,7 +217,7 @@ func ListLevel1Blobs(query string) (<-chan []byte, error) {
 
 func GetLevel1BlobsStats() (uint64, error) {
 
-	txn, _ := env.BeginTxn(nil, mdb.RDONLY)
+	txn, _ := env.BeginTxn(nil, lmdb.Readonly)
 	defer txn.Abort()
 	stats, err := txn.Stat(dbiLevel1Blobs)
 	if err != nil {
@@ -213,9 +232,9 @@ const COMMIT = "commit"
 const PREFIX = "prefix"
 const TREE = "tree"
 
-func getDbForObjectType(objType string) *mdb.DBI {
+func getDbForObjectType(objType string) *lmdb.DBI {
 
-	var dbi *mdb.DBI
+	var dbi *lmdb.DBI
 	switch objType {
 	case BLOB:
 		dbi = &dbiLevel1Blobs
@@ -256,41 +275,41 @@ func AddMultiToLevel1(keys, values [][]byte, objType string) error {
 // Get object of any type, return value and type
 func GetLevel1(key []byte) ([]byte, string, error) {
 
-	txn, _ := env.BeginTxn(nil, mdb.RDONLY)
+	txn, _ := env.BeginTxn(nil, lmdb.Readonly)
 	defer txn.Abort()
 
 	val, err := txn.Get(dbiLevel1Blobs, key)
-	if err != nil && !(err == mdb.NotFound) {
+	if err != nil && !lmdb.IsNotFound(err) {
 		return nil, "", err
-	} else if !(err == mdb.NotFound) {
+	} else if !lmdb.IsNotFound(err) {
 		return val, BLOB, err
 	}
 
 	val, err = txn.Get(dbiLevel1Commits, key)
-	if err != nil && !(err == mdb.NotFound) {
+	if err != nil && !lmdb.IsNotFound(err) {
 		return nil, "", err
-	} else if !(err == mdb.NotFound) {
+	} else if !lmdb.IsNotFound(err) {
 		return val, COMMIT, err
 	}
 
 	val, err = txn.Get(dbiLevel1Prefixes, key)
-	if err != nil && !(err == mdb.NotFound) {
+	if err != nil && !lmdb.IsNotFound(err) {
 		return nil, "", err
-	} else if !(err == mdb.NotFound) {
+	} else if !lmdb.IsNotFound(err) {
 		return val, PREFIX, err
 	}
 
 	val, err = txn.Get(dbiLevel1Trees, key)
-	if err != nil && !(err == mdb.NotFound) {
+	if err != nil && !lmdb.IsNotFound(err) {
 		return nil, "", err
-	} else if !(err == mdb.NotFound) {
+	} else if !lmdb.IsNotFound(err) {
 		return val, TREE, err
 	}
 
-	return nil, "", mdb.NotFound
+	return nil, "", lmdb.NotFound
 }
 
-func listMdb(dbi *mdb.DBI, query string) (<-chan []byte, error) {
+func listMdb(dbi *lmdb.DBI, query string) (<-chan []byte, error) {
 
 	result := make(chan []byte)
 
@@ -299,9 +318,9 @@ func listMdb(dbi *mdb.DBI, query string) (<-chan []byte, error) {
 		defer close(result)
 
 		// scan the database
-		txn, _ := env.BeginTxn(nil, mdb.RDONLY)
+		txn, _ := env.BeginTxn(nil, lmdb.Readonly)
 		defer txn.Abort()
-		cursor, _ := txn.CursorOpen(*dbi)
+		cursor, _ := txn.OpenCursor(*dbi)
 		defer cursor.Close()
 
 		setRangeUponStart := len(query) > 0
@@ -318,29 +337,27 @@ func listMdb(dbi *mdb.DBI, query string) (<-chan []byte, error) {
 
 			var bkey []byte
 			if setRangeUponStart {
-				bval, _, err := cursor.GetVal(queryKey, nil, mdb.SET_RANGE)
-				if err == mdb.NotFound {
+				var err error
+				bkey, _, err = cursor.Get(queryKey, nil, lmdb.SetRange)
+				if lmdb.IsNotFound(err) {
 					break
 				}
 				if err != nil {
 					// TODO: Log error
 					return
 				}
-
-				bkey = bval.Bytes()
 
 				setRangeUponStart = false
 			} else {
 				var err error
-				bkey, _, err = cursor.Get(nil, nil, mdb.NEXT)
-				if err == mdb.NotFound {
+				bkey, _, err = cursor.Get(nil, nil, lmdb.Next)
+				if lmdb.IsNotFound(err) {
 					break
 				}
 				if err != nil {
 					// TODO: Log error
 					return
 				}
-
 			}
 
 			// break early if start of key is not longer

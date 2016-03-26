@@ -22,7 +22,7 @@ import (
 	"github.com/s3git/s3git-go/internal/cas"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
-	"github.com/szferi/gomdb"
+	"github.com/bmatsuo/lmdb-go/lmdb"
 	"io/ioutil"
 	"os"
 )
@@ -52,11 +52,11 @@ func pull(progress func(maxTicks int64)) error {
 	for prefix, _ := range prefixesInBackend {
 		key, _ := hex.DecodeString(prefix)
 		_, _, err := kv.GetLevel1(key)
-		if err != nil && err != mdb.NotFound {
+		if err != nil && !lmdb.IsNotFound(err) {
 			return err
 		}
 
-		if err == mdb.NotFound {
+		if lmdb.IsNotFound(err) {
 			// Prefix is not available locally  --> add to get fetched
 			prefixesToFetch = append(prefixesToFetch, prefix)
 		}
