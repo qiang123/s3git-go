@@ -141,7 +141,7 @@ func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded 
 		}
 	}
 
-	// TODO: for back ends storing whole files: consider multipart upload?
+	// TODO: [perf] for back ends storing whole files: consider multipart upload?
 	cr := cas.MakeReader(hash)
 	if cr == nil {
 		panic(errors.New("Failed to create cas reader"))
@@ -164,7 +164,7 @@ func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded 
 // Push a blob to the back end store in deduplicated format
 func PushBlobDeduped(hash string, size *uint64, client backend.Backend) (newlyUploaded bool, err error) {
 
-	// TODO: for back ends storing chunks: upload chunks in parallel
+	// TODO: [perf] for back ends storing chunks: upload chunks in parallel
 
 	hx, err := hex.DecodeString(hash)
 	if err != nil {

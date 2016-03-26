@@ -74,7 +74,7 @@ func openRoot(hash string) ([]Key, error) {
 // Pull a blob on demand from the back end store
 func pullDownOnDemand(hash string) ([]byte, error) {
 
-	// TODO: implement streaming mode for large blobs, spawn off multiple GET range-headers
+	// TODO: [perf] implement streaming mode for large blobs, spawn off multiple GET range-headers
 
 	var client backend.Backend
 
@@ -150,14 +150,14 @@ func (cr *Reader) Read(p []byte) (n int, err error) {
 	for {
 		if cr.chunkBuf == nil {
 			key := cr.leaves[cr.leafNr].String()
-			// TODO: Consider using a memory pool and reusing chunks?
+			// TODO: [perf] Consider using a memory pool and reusing chunks?
 
 			// Check whether chunk is available on local disk, if not, pull down to local disk
 			chunkFile := getBlobPath(key)
 			if _, err := os.Stat(chunkFile); os.IsNotExist(err) {
 
 				// Chunk is missing, load file from back end
-				// TODO: Ideally optimize here to just get the missing chunk (not whole file)
+				// TODO: [perf] Ideally optimize here to just get the missing chunk (not whole file)
 				_, err = pullDownOnDemand(cr.hash)
 				if err != nil {
 					return 0, err
@@ -248,7 +248,7 @@ func StoreBlobInCache(name, objType string) ([]byte, error) {
 
 func PullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]byte, error) {
 
-	// TODO: Remove work around by using separate file
+	// TODO: [perf] Remove work around by using separate file
 	name, err := FetchBlobToTempFile(hash, client)
 	if err != nil {
 		return nil, err
@@ -261,7 +261,7 @@ func PullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]by
 	}
 
 	if deduped {
-		// TODO: Probably we do not want to fetch all blobs at once (maybe a couple), rather just the first one and let the others be fetched 'on demand'
+		// TODO: [perf] Probably we do not want to fetch all blobs at once (maybe a couple), rather just the first one and let the others be fetched 'on demand'
 		for _, l := range leaves {
 			err := FetchLeafBlob(l.String(), client)
 			if err != nil {
@@ -269,7 +269,7 @@ func PullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]by
 			}
 		}
 		leafHashes := make([]byte, len(leaves)*KeySize)
-		// TODO: Remove ugly 'recopying' back to byte array, instead return []Key directly
+		// TODO: [perf] Remove ugly 'recopying' back to byte array, instead return []Key directly
 		for index, l := range leaves {
 			copy(leafHashes[index*KeySize:(index+1)*KeySize], l.object[:])
 		}
