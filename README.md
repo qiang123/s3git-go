@@ -5,7 +5,14 @@ s3git-go
 
 This is the go SDK package for s3git.
 
-This README is a little outdated now and will be updated soon.
+For brevity reasons, error handling and other boilerplate code like package naming etc. is not shown in the examples. Actual client code should always check for errors, see [s3git](https://github.com/s3git/s3git) as an example.
+
+**DISCLAIMER: This software is still under development (although the storage format/model using BLAKE2 hasing is stable)  -- use at your own peril for now**
+
+BLAKE2 Tree Hashing
+-------------------
+
+If you would like to understand how s3git uses the BLAKE2 Tree hashing mode please see [here](https://github.com/s3git/s3git/blob/master/BLAKE2.md). 
 
 Create a repository
 -------------------
@@ -15,14 +22,24 @@ import "github.com/s3git/s3git-go"
 
 repo, _ := s3git.InitRepository(".")
 
-repo.Add()
+repo.Add(strings.NewReader("hello s3git"))
 
 repo.Commit("Initial commit")
 
-repo.List()
+list, _ := repo.List("")
 
-repo.Log()
+for l := range list {
+    fmt.Println(l)
+}
+
+commits, _ := repo.ListCommits("")
+
+for commit := range commits {
+    fmt.Println(commit)
+}
 ```
+
+See [here](https://github.com/s3git/s3git-go/blob/master/examples/create.go) for the full example (and others).
 
 Clone a repository
 ------------------
