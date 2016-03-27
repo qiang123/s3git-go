@@ -5,6 +5,8 @@ s3git-go
 
 This is the go SDK package for s3git.
 
+This README is a little outdated now and will be updated soon.
+
 Create a repository
 -------------------
 
