@@ -100,6 +100,16 @@ func Clone(url, path string, options ...CloneOptions) (*Repository, error) {
 		return nil, err
 	}
 
+	progressDummy := func(total int64) {}
+
+	// Plug in dummy progress calls if unset
+	if optns.progressDownloading == nil {
+		optns.progressDownloading = progressDummy
+	}
+	if optns.progressProcessing == nil {
+		optns.progressProcessing = progressDummy
+	}
+
 	err = clone(client, optns.progressDownloading, optns.progressProcessing)
 	if err != nil {
 		return nil, err
