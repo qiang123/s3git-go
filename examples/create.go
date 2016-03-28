@@ -3,11 +3,15 @@ package main
 import (
 	"fmt"
 	"github.com/s3git/s3git-go"
+	"io/ioutil"
 	"strings"
 )
 
 func main() {
-	repo, _ := s3git.InitRepository(".")
+
+	dir, _ := ioutil.TempDir("", "s3git")
+
+	repo, _ := s3git.InitRepository(dir)
 
 	repo.Add(strings.NewReader("hello s3git"))
 
