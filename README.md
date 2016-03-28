@@ -7,7 +7,9 @@ This is the go SDK package for s3git.
 
 For brevity reasons, error handling and other boilerplate code like package naming etc. is not shown in the examples. Actual client code should always check for errors, see [s3git](https://github.com/s3git/s3git) as an example.
 
-**DISCLAIMER: This software is still under development (although the storage format/model using BLAKE2 hasing is stable)  -- use at your own peril for now**
+**DISCLAIMER: This software is still under development (although the storage format/model using BLAKE2 hashing is stable)  -- use at your own peril for now**
+
+**Note that the API is not stable yet, you can expect minor changes**
 
 BLAKE2 Tree Hashing
 -------------------
@@ -20,18 +22,16 @@ Create a repository
 ```go
 import "github.com/s3git/s3git-go"
 
+// Create repo
 repo, _ := s3git.InitRepository(".")
 
+// Add some data
 repo.Add(strings.NewReader("hello s3git"))
 
+// Commit changes
 repo.Commit("Initial commit")
 
-list, _ := repo.List("")
-
-for l := range list {
-    fmt.Println(l)
-}
-
+// List commits
 commits, _ := repo.ListCommits("")
 
 for commit := range commits {
@@ -39,7 +39,12 @@ for commit := range commits {
 }
 ```
 
-See [here](https://github.com/s3git/s3git-go/blob/master/examples/create.go) for the full example (and others).
+See [here](https://github.com/s3git/s3git-go/blob/master/examples/create.go) for the full example (and others). And run like this:
+
+```sh
+$ cd $GOPATH/src/github.com/s3git/s3git-go/examples
+$ go run create.go
+```
 
 Clone a repository
 ------------------
@@ -47,10 +52,18 @@ Clone a repository
 ```go
 import "github.com/s3git/s3git-go"
 
-repo, _ := s3git.Clone("s3://s3git-100m", ".")
+options := []s3git.CloneOptions{}
+options = append(options, s3git.CloneOptionSetAccessKey("AKIAJYNT4FCBFWDQPERQ"))
+options = append(options, s3git.CloneOptionSetSecretKey("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"))
 
-for elem := range repo.List("123456") {
-    fmt.Println(elem)
+// Clone a repo
+repo, _ := s3git.Clone("s3://s3git-spoon-knife", ".", options...)
+
+// List contents
+list, _ := repo.List("")
+
+for l := range list {
+    fmt.Println(l)
 }
 ```
 
