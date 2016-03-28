@@ -13,12 +13,6 @@ func main() {
 
 	repo.Commit("Initial commit")
 
-	list, _ := repo.List("")
-
-	for l := range list {
-		fmt.Println(l)
-	}
-
 	commits, _ := repo.ListCommits("")
 
 	for commit := range commits {
