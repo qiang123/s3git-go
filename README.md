@@ -16,6 +16,11 @@ BLAKE2 Tree Hashing
 
 If you would like to understand how s3git uses the BLAKE2 Tree hashing mode please see [here](https://github.com/s3git/s3git/blob/master/BLAKE2.md). 
 
+Development environment
+-----------------------
+
+See [here](https://github.com/s3git/s3git#building-from-source) for setting up the development environment.
+
 Create a repository
 -------------------
 
