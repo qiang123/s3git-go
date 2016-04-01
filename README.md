@@ -80,14 +80,15 @@ import "github.com/s3git/s3git-go"
 
 repo, _ := s3git.OpenRepository(".")
 
-file, _ := os.Open("picture.jpg")
+repo.Add(strings.NewReader(fmt.Sprint(time.Now())))
 
-repo.Add(file)
+repo.Commit("New commit")
 
-repo.Commit("Added a picture")
-
-repo.Push()
+hydrate := false 	// For explanation, see https://github.com/s3git/s3git/blob/master/BLAKE2.md#hydrated
+repo.Push(hydrate)
 ```
+
+See [change_and_push.go](https://github.com/s3git/s3git-go/blob/master/examples/change_and_push.go).
 
 Pull down changes
 -----------------
