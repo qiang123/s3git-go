@@ -32,7 +32,7 @@ func TestPull(t *testing.T) {
 	fmt.Println(path)
 	//defer teardownRepo(path)
 
-	err := repo.Pull()
+	err := repo.Pull(func(total int64) {})
 	assert.Nil(t, err)
 
 	for i := 0; i < 10; i++ {
@@ -43,8 +43,8 @@ func TestPull(t *testing.T) {
 
 	core.GetCommitObject(hash)
 
-	repo.Push()
+	repo.Push(false, func(total int64) {})
 
-	err = repo.Pull()
+	err = repo.Pull(func(total int64) {})
 	assert.Nil(t, err)
 }

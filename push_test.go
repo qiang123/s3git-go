@@ -37,5 +37,5 @@ func TestPush(t *testing.T) {
 
 	core.GetCommitObject(hash)
 
-	repo.Push()
+	repo.Push(false, func(total int64) {})
 }
