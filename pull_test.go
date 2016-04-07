@@ -18,6 +18,7 @@ package s3git
 
 import (
 	"fmt"
+	"io/ioutil"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -25,25 +26,39 @@ import (
 	"time"
 )
 
-// TODO: Do stand alone test that does not rely on external (S3) state
 func TestPull(t *testing.T) {
+
+	fakeDir, _ := ioutil.TempDir("", "s3git-fake-backend-")
+
+	testCreateFakeRepo(t, fakeDir)
+
 	repo, path := setupRepo()
-	fmt.Println(path)
-	//defer teardownRepo(path)
+	fmt.Println("Pull", path)
+	repo.remoteAddFake("fake", fakeDir)
+	defer teardownRepo(path)
 
 	err := repo.Pull(func(total int64) {})
 	assert.Nil(t, err)
 
+	stats, err := repo.Statistics()
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(10), stats.Objects, "Number of objects is not correct")
+}
+
+func testCreateFakeRepo(t *testing.T, fakeDir string) {
+
+	repoFake, path := setupRepo()
+	repoFake.remoteAddFake("fake", fakeDir)
+	defer teardownRepo(path)
+
 	for i := 0; i < 10; i++ {
-		repo.Add(strings.NewReader(fmt.Sprintf("hello s3git: %d, %s", i, time.Now())))
+		repoFake.Add(strings.NewReader(fmt.Sprintf("hello s3git: %d, %s", i, time.Now())))
 	}
 
-	hash, _, _ := repo.Commit("1st commit")
+	hash, _, _ := repoFake.Commit("1st commit")
 
 	core.GetCommitObject(hash)
 
-	repo.Push(false, func(total int64) {})
-
-	err = repo.Pull(func(total int64) {})
+	err := repoFake.Push(true, func(total int64) {})
 	assert.Nil(t, err)
 }
