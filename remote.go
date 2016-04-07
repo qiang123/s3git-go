@@ -74,6 +74,11 @@ func (repo Repository) RemoteAdd(name, resource, accessKey, secretKey string, op
 	return config.AddRemote(name, parts[1], region, accessKey, secretKey, endpoint)
 }
 
+func (repo Repository) remoteAddFake(name, directory string) error {
+
+	return config.AddFakeRemote(name, directory)
+}
+
 func (repo Repository) RemotesShow() ([]Remote, error) {
 
 	remotes := []Remote{}
