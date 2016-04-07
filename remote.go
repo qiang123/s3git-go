@@ -67,6 +67,7 @@ func (repo Repository) RemoteAdd(name, resource, accessKey, secretKey string, op
 	}
 
 	if region == "" {
+		// TODO: Remove hard coded region
 		region = "us-east-1"
 	}
 
