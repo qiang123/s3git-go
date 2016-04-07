@@ -20,6 +20,7 @@ import (
 	"io"
 	"errors"
 	"github.com/s3git/s3git-go/internal/config"
+	"github.com/s3git/s3git-go/internal/backend/fake"
 	"github.com/s3git/s3git-go/internal/backend/s3"
 )
 
@@ -43,5 +44,11 @@ func GetDefaultClient() (Backend, error) {
 
 		return nil, errors.New("No remotes configured")
 	}
-	return s3.MakeClient(config.Config.Remotes[0]), nil
+
+	switch config.Config.Remotes[0].Type {
+	case config.REMOTE_FAKE:
+		return fake.MakeClient(config.Config.Remotes[0]), nil
+	default: // config.REMOTE_S3
+		return s3.MakeClient(config.Config.Remotes[0]), nil
+	}
 }
