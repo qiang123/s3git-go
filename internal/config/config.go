@@ -33,6 +33,8 @@ import (
 const S3GIT_CONFIG = ".s3git.config"
 const S3GIT_DIR = ".s3git"
 const CONFIG = "config"
+const REMOTE_S3 = "s3"
+const REMOTE_FAKE = "fake"
 
 var Config ConfigObject
 
@@ -45,9 +47,13 @@ type ConfigObject struct {
 	Remotes         []RemoteObject `json:"s3gitRemotes"`
 }
 
+// Base object for Remotes
 type RemoteObject struct {
 	Name		string `json:"Name"`
+	Type		string `json:"Type"`
 	Hydrate     bool   `json:"Hydrate"`
+
+	// Remote object for S3
 	S3Bucket    string `json:"S3Bucket"`
 	S3Region    string `json:"S3Region"`
 	S3AccessKey string `json:"S3AccessKey"`
@@ -57,6 +63,9 @@ type RemoteObject struct {
 	MinioInsecure bool   `json:"MinioInsecure"`
 
 	AcdRefreshToken string `json:"AcdRefreshToken"`
+
+	// Remote object for fake backend
+	FakeDirectory   string `json:"FakeDirectory"`
 }
 
 func getConfigFile(dir string) string {
@@ -107,7 +116,7 @@ func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string) error {
 	region = getDefaultValue(region, "S3GIT_S3_REGION")	// Allow to be overriden when set explicitly
 
 	remotes := []RemoteObject{}
-	remotes = append(remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
+	remotes = append(remotes, RemoteObject{Name: "primary", Type: REMOTE_S3, S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
 
 	return saveNewConfig(dir, remotes)
 }
@@ -132,7 +141,14 @@ func saveConfig(configObject ConfigObject, remotes []RemoteObject) error {
 		return err
 	}
 
+	// Save config to file
 	err := ioutil.WriteFile(getConfigFile(configObject.BasePath), buf.Bytes(), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	// Reload config
+	_, err = LoadConfig(configObject.BasePath)
 	if err != nil {
 		return err
 	}
@@ -154,7 +170,26 @@ func AddRemote(name, bucket, region, accessKey, secretKey, endpoint string) erro
 	}
 
 	remotes := []RemoteObject{}
-	remotes = append(remotes, RemoteObject{Name: "primary", S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
+	remotes = append(remotes, RemoteObject{Name: name, Type: REMOTE_S3, S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
+
+	return saveConfig(Config, remotes)
+}
+
+func AddFakeRemote(name, directory string) error {
+
+	for _, r := range Config.Remotes {
+		if r.Name == name {
+			return errors.New(fmt.Sprintf("Remote already exists with name: %s", name))
+		}
+	}
+
+	// TODO: Remove restriction for just a single remote
+	if len(Config.Remotes) >= 1 {
+		return errors.New("Current restriction applies of one remote only (to be lifted)")
+	}
+
+	remotes := []RemoteObject{}
+	remotes = append(remotes, RemoteObject{Name: "fake", Type: REMOTE_FAKE, FakeDirectory: directory})
 
 	return saveConfig(Config, remotes)
 }
