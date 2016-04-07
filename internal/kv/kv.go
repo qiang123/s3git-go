@@ -343,7 +343,7 @@ func listMdb(dbi *lmdb.DBI, query string) (<-chan []byte, error) {
 					break
 				}
 				if err != nil {
-					// TODO: Log error
+					fmt.Fprint(os.Stderr, err)
 					return
 				}
 
@@ -355,7 +355,7 @@ func listMdb(dbi *lmdb.DBI, query string) (<-chan []byte, error) {
 					break
 				}
 				if err != nil {
-					// TODO: Log error
+					fmt.Fprint(os.Stderr, err)
 					return
 				}
 			}
