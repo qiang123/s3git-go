@@ -17,14 +17,14 @@
 package s3git
 
 import (
+	"errors"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/config"
 	"strings"
-	"errors"
 )
 
 type Remote struct {
-	Name string
+	Name     string
 	Resource string
 }
 

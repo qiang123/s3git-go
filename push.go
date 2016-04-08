@@ -25,9 +25,9 @@ import (
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
 
+	"bytes"
 	"encoding/hex"
 	"sync"
-	"bytes"
 )
 
 // Perform a push to the back end for the repository
@@ -224,7 +224,7 @@ func pushBlobRange(hashes []string, size *uint64, hydrated bool, client backend.
 
 				pushHydratedToRemote := hydrated
 				if !checkIfLeavesAreEqualSize(hash) {
-					pushHydratedToRemote = false	// Cannot push hydrated to remote back end when eg rolling hash is used (as we do not know where the boundaries are)
+					pushHydratedToRemote = false // Cannot push hydrated to remote back end when eg rolling hash is used (as we do not know where the boundaries are)
 				}
 				var err error
 				if pushHydratedToRemote {

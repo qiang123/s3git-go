@@ -18,9 +18,9 @@ package s3git
 
 import (
 	"fmt"
-	"io/ioutil"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"strings"
 	"testing"
 	"time"

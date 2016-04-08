@@ -18,11 +18,11 @@ package s3git
 
 import (
 	"encoding/hex"
+	"github.com/bmatsuo/lmdb-go/lmdb"
 	"github.com/s3git/s3git-go/internal/backend"
 	"github.com/s3git/s3git-go/internal/cas"
 	"github.com/s3git/s3git-go/internal/core"
 	"github.com/s3git/s3git-go/internal/kv"
-	"github.com/bmatsuo/lmdb-go/lmdb"
 	"io/ioutil"
 	"os"
 )
