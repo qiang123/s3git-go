@@ -33,7 +33,6 @@ func TestPull(t *testing.T) {
 	testCreateFakeRepo(t, fakeDir)
 
 	repo, path := setupRepo()
-	fmt.Println("Pull", path)
 	repo.remoteAddFake("fake", fakeDir)
 	defer teardownRepo(path)
 

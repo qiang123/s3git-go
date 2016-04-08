@@ -26,8 +26,7 @@ import (
 
 func TestPush(t *testing.T) {
 	repo, path := setupRepo()
-	fmt.Println(path)
-	//defer teardownRepo(path)
+	defer teardownRepo(path)
 
 	for i := 0; i < 100; i++ {
 		repo.Add(strings.NewReader(fmt.Sprintf("hello s3git: %d", i)))
