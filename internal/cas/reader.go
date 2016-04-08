@@ -186,12 +186,12 @@ func (cr *Reader) Read(p []byte) (n int, err error) {
 		cr.chunkOffset += bytesRead
 
 		if bytesToRead <= 0 {
-			return bytesRead, nil
+			return len(p)-bytesToRead, nil
 		}
 
 		if remainingInBuffer <= 0 {
 			if cr.chunkLast {
-				return bytesRead, io.EOF
+				return len(p)-bytesToRead, io.EOF
 			}
 			cr.chunkBuf = nil
 			cr.chunkOffset = 0
