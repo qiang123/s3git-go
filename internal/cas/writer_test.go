@@ -84,6 +84,22 @@ func TestWriteDifferentChunkSize(t *testing.T) {
 	assert.Equal(t, input, output, "Input and output are different")
 }
 
+func TestSmallerChunkSizeForReading(t *testing.T) {
+
+	path := setupRepo(t)
+	defer teardownRepo(path)
+
+	input := strings.Repeat("AbCdEfGhIjKlMnOpQrDtUvWxYz", int((0.5+float32(random(15, 20)))*1024*1024/16))
+
+	rootKeyStr := writeTo(t, strings.NewReader(input))
+
+	config.Config.ChunkSize = uint32(1e6 + random(1e5, 2e5))
+
+	output := readBack(t, rootKeyStr)
+
+	assert.Equal(t, input, output, "Input and output are different")
+}
+
 
 func writeTo(t *testing.T, r io.Reader) string {
 
