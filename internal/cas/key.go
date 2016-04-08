@@ -45,7 +45,6 @@ var (
 // Size of the CAS keys in bytes.
 const KeySize = 64
 const KeySizeHex = KeySize*2
-const ChunkSize = 5*1024*1024
 
 // A Key that identifies data stored in the CAS. Keys are immutable.
 type Key struct {

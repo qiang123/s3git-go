@@ -36,6 +36,7 @@ const CONFIG = "config"
 const REMOTE_S3 = "s3"
 const REMOTE_FAKE = "fake"
 const REMOTE_ACD = "acd"
+const ChunkSize = 5*1024*1024
 
 var Config ConfigObject
 
@@ -43,6 +44,7 @@ type ConfigObject struct {
 	Version         int            `json:"s3gitVersion"`
 	Type            string         `json:"s3gitType"` // config
 	BasePath        string         `json:"s3gitBasePath"`
+	ChunkSize       uint32		   `json:"s3gitChunkSize"`
 	RollingHashBits int            `json:"s3gitRollingHashBits"`
 	RollingHashMin  int            `json:"s3gitRollingHashMin"`
 	Remotes         []RemoteObject `json:"s3gitRemotes"`
@@ -86,6 +88,10 @@ func LoadConfig(dir string) (bool, error) {
 		return false, err
 	}
 
+	if Config.ChunkSize == 0 {	// If unspecified, set to default
+		Config.ChunkSize = ChunkSize
+	}
+
 	return true, nil
 }
 
@@ -124,7 +130,7 @@ func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string) error {
 
 func saveNewConfig(dir string, remotes []RemoteObject) error {
 
-	configObject := ConfigObject{Version: 1, Type: CONFIG, BasePath: dir}
+	configObject := ConfigObject{Version: 1, Type: CONFIG, BasePath: dir, ChunkSize: ChunkSize}
 
 	return saveConfig(configObject, remotes)
 }

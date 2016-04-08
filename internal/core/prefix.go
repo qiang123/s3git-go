@@ -30,6 +30,7 @@ import (
 	"strings"
 	"runtime"
 	"errors"
+	"github.com/s3git/s3git-go/internal/config"
 )
 
 type prefixObject struct {
@@ -145,13 +146,13 @@ func bruteForce(obj string, winner chan<- solution, possibilities <-chan try, do
 	// blob is the blob to mutate in-place repeatedly while testing
 	// whether we have a match.
 
-	if len(obj) > cas.ChunkSize {
+	if uint32(len(obj)) > config.Config.ChunkSize {
 		// You don't want to compute prefixes for objects that are too large
 		// (if so split off another object of different type and point to it)
 		panic(errors.New("Object to prefix with hash is too large"))
 	}
-	leafHash := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: cas.ChunkSize, NodeOffset: 0, NodeDepth: 0, InnerHashSize: 64, IsLastNode: true}})
-	rootHash := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: cas.ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
+	leafHash := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.ChunkSize, NodeOffset: 0, NodeDepth: 0, InnerHashSize: 64, IsLastNode: true}})
+	rootHash := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
 	wantHexPrefix := []byte(Prefix())[:prefixNum-prefixCheat]
 	hexBuf := make([]byte, 0, cas.KeySizeHex)
 

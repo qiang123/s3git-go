@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/cas"
+	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/kv"
 	"io"
 	"sort"
@@ -85,7 +86,8 @@ func GetTreeObject(hash string) (*treeObject, error) {
 	// io.Copy(buf, cr)
 
 	size := 0
-	array := make([]byte, cas.ChunkSize)
+	// TODO: Avoid using config.Config.ChunkSize here
+	array := make([]byte, config.Config.ChunkSize)
 	for {
 		read, err := cr.Read(array)
 		size += read

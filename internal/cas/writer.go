@@ -30,7 +30,7 @@ import (
 
 func MakeWriter(objType string) *Writer {
 	cw := Writer{areaDir: stageDir, objType: objType}
-	cw.chunkBuf = make([]byte, ChunkSize)
+	cw.chunkBuf = make([]byte, config.Config.ChunkSize)
 	return &cw
 }
 
@@ -45,7 +45,7 @@ type Writer struct {
 	cheatMode   bool
 	leaves      []Key
 	chunkBuf    []byte
-	chunkOffset int
+	chunkOffset uint32
 	objType     string
 	areaDir		string
 	flushed		bool
@@ -57,20 +57,20 @@ func (cw *Writer) setAreaDir(dir string) {
 
 func (cw *Writer) Write(p []byte) (nn int, err error) {
 
-	for bytesToWrite := len(p); bytesToWrite > 0; {
+	for bytesToWrite := uint32(len(p)); bytesToWrite > 0; {
 
-		if cw.chunkOffset == ChunkSize {
+		if cw.chunkOffset == config.Config.ChunkSize {
 			// Write out full chunk (without last chunk marker)
 			cw.flush(false)
 		}
 
-		if cw.chunkOffset + bytesToWrite < ChunkSize {
-			copy(cw.chunkBuf[cw.chunkOffset:], p[len(p)-bytesToWrite:])
+		if cw.chunkOffset + bytesToWrite < config.Config.ChunkSize {
+			copy(cw.chunkBuf[cw.chunkOffset:], p[uint32(len(p))-bytesToWrite:])
 			cw.chunkOffset += bytesToWrite
 			bytesToWrite = 0
 		} else {
-			bytesWritten := ChunkSize - cw.chunkOffset
-			copy(cw.chunkBuf[cw.chunkOffset:], p[len(p)-bytesToWrite:len(p)-bytesToWrite+bytesWritten])
+			bytesWritten := config.Config.ChunkSize - cw.chunkOffset
+			copy(cw.chunkBuf[cw.chunkOffset:], p[uint32(len(p))-bytesToWrite:uint32(len(p))-bytesToWrite+bytesWritten])
 			bytesToWrite -= bytesWritten
 			cw.chunkOffset += bytesWritten
 		}
@@ -82,7 +82,7 @@ func (cw *Writer) Write(p []byte) (nn int, err error) {
 
 func (cw *Writer) flush(isLastNode bool) {
 
-	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: ChunkSize, NodeOffset: uint64(len(cw.leaves)), NodeDepth: 0, InnerHashSize: 64, IsLastNode: isLastNode}})
+	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.ChunkSize, NodeOffset: uint64(len(cw.leaves)), NodeDepth: 0, InnerHashSize: 64, IsLastNode: isLastNode}})
 	blake2.Write(cw.chunkBuf[:cw.chunkOffset])
 
 	leafKey := NewKey(blake2.Sum(nil))
@@ -145,7 +145,7 @@ func (cw *Writer) Flush() (string, []byte, bool, error) {
 func computeRootBlake2(leaves []Key) (string, error) {
 
 	// Compute hash of level 1 root key
-	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
+	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
 
 	// Iterate over hashes of all underlying nodes
 	for _, leave := range leaves {
