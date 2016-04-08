@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/cas"
-	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/kv"
 	"io"
 	"sort"
@@ -82,25 +81,7 @@ func GetTreeObject(hash string) (*treeObject, error) {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	// TODO: Find out why io.Copy does not read whole file from cas (truncated for 50 MB tree files)
-	// io.Copy(buf, cr)
-
-	size := 0
-	// TODO: Avoid using config.Config.ChunkSize here
-	array := make([]byte, config.Config.ChunkSize)
-	for {
-		read, err := cr.Read(array)
-		size += read
-		if read > 0 {
-			_, err := buf.Write(array[:read])
-			if err != nil {
-				panic(err)
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-	}
+	io.Copy(buf, cr)
 
 	s := string(buf.Bytes())
 
