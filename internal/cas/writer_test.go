@@ -26,6 +26,8 @@ import (
 	"bytes"
 	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/kv"
+	"math/rand"
+	"time"
 )
 
 func TestWriteSingleChunk(t *testing.T) {
@@ -40,6 +42,48 @@ func TestWriteSingleChunk(t *testing.T) {
 
 	assert.Equal(t, input, output, "Input and output are different")
 }
+
+func TestWriteTwoChunks(t *testing.T) {
+
+	path := setupRepo(t)
+	defer teardownRepo(path)
+
+	input := strings.Repeat("0123456789abcdef", 7.5*1024*1024/16)
+
+	rootKeyStr := writeTo(t, strings.NewReader(input))
+	output := readBack(t, rootKeyStr)
+
+	assert.Equal(t, input, output, "Input and output are different")
+}
+
+func TestWriteManyChunks(t *testing.T) {
+
+	path := setupRepo(t)
+	defer teardownRepo(path)
+
+	input := strings.Repeat("0123456789abcdef", 22.5*1024*1024/16)
+
+	rootKeyStr := writeTo(t, strings.NewReader(input))
+	output := readBack(t, rootKeyStr)
+
+	assert.Equal(t, input, output, "Input and output are different")
+}
+
+func TestWriteDifferentChunkSize(t *testing.T) {
+
+	path := setupRepo(t)
+	defer teardownRepo(path)
+
+	config.Config.ChunkSize = 1*1024*1024
+
+	input := strings.Repeat("0123456789abcdef", int((0.5+float32(random(5, 10)))*1024*1024/16))
+
+	rootKeyStr := writeTo(t, strings.NewReader(input))
+	output := readBack(t, rootKeyStr)
+
+	assert.Equal(t, input, output, "Input and output are different")
+}
+
 
 func writeTo(t *testing.T, r io.Reader) string {
 
@@ -94,4 +138,9 @@ func setupRepo(t *testing.T) (string) {
 
 func teardownRepo(path string) {
 	defer os.RemoveAll(path)
+}
+
+func random(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(max - min) + min
 }
