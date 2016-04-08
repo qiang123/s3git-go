@@ -105,20 +105,8 @@ func readBack(t *testing.T, hash string) string {
 	assert.NotEmpty(t, cr)
 
 	buf := bytes.NewBuffer(nil)
-
-	size := 0
-	array := make([]byte, config.Config.ChunkSize)
-	for {
-		read, err := cr.Read(array)
-		size += read
-		if read > 0 {
-			_, err := buf.Write(array[:read])
-			assert.Nil(t, err)
-		}
-		if err == io.EOF {
-			break
-		}
-	}
+	_, err := io.Copy(buf, cr)
+	assert.Nil(t, err)
 
 	return string(buf.Bytes())
 }
