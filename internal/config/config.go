@@ -35,6 +35,7 @@ const S3GIT_DIR = ".s3git"
 const CONFIG = "config"
 const REMOTE_S3 = "s3"
 const REMOTE_FAKE = "fake"
+const REMOTE_ACD = "acd"
 
 var Config ConfigObject
 
