@@ -19,15 +19,15 @@ package config
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
-	"os"
-	"fmt"
-	"strings"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"io/ioutil"
+	"os"
+	"strings"
 )
 
 const S3GIT_CONFIG = ".s3git.config"
@@ -52,9 +52,9 @@ type ConfigObject struct {
 
 // Base object for Remotes
 type RemoteObject struct {
-	Name		string `json:"Name"`
-	Type		string `json:"Type"`
-	Hydrate     bool   `json:"Hydrate"`
+	Name    string `json:"Name"`
+	Type    string `json:"Type"`
+	Hydrate bool   `json:"Hydrate"`
 
 	// Remote object for S3
 	S3Bucket    string `json:"S3Bucket"`
@@ -63,12 +63,12 @@ type RemoteObject struct {
 	S3SecretKey string `json:"S3SecretKey"`
 	S3Endpoint  string `json:"S3Endpoint"`
 
-	MinioInsecure bool   `json:"MinioInsecure"`
+	MinioInsecure bool `json:"MinioInsecure"`
 
 	AcdRefreshToken string `json:"AcdRefreshToken"`
 
 	// Remote object for fake backend
-	FakeDirectory   string `json:"FakeDirectory"`
+	FakeDirectory string `json:"FakeDirectory"`
 }
 
 func getConfigFile(dir string) string {
@@ -118,9 +118,9 @@ func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string) error {
 			return err
 		}
 	} else {
-		region = "us-east-1"	// TODO: Remove hard-coded region for endpoints
+		region = "us-east-1" // TODO: Remove hard-coded region for endpoints
 	}
-	region = getDefaultValue(region, "S3GIT_S3_REGION")	// Allow to be overriden when set explicitly
+	region = getDefaultValue(region, "S3GIT_S3_REGION") // Allow to be overriden when set explicitly
 
 	remotes := []RemoteObject{}
 	remotes = append(remotes, RemoteObject{Name: "primary", Type: REMOTE_S3, S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
@@ -201,7 +201,6 @@ func AddFakeRemote(name, directory string) error {
 	return saveConfig(Config, remotes)
 }
 
-
 // Get the region for a bucket or return US Standard otherwise
 func GetRegionForBucket(bucket, accessKey, secretKey string) (string, error) {
 
@@ -227,7 +226,6 @@ func GetRegionForBucket(bucket, accessKey, secretKey string) (string, error) {
 
 	return region, nil
 }
-
 
 func getDefaultValue(def, envName string) string {
 
