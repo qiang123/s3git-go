@@ -139,8 +139,6 @@ func (cr *Reader) open(hash string) error {
 // Read the contents of a blob
 func (cr *Reader) Read(p []byte) (n int, err error) {
 
-	// TODO: Consider returning EOF in case of errors/failed functions?
-
 	bytesToRead := len(p)
 
 	if cr.chunkLast && cr.chunkOffset == 0 {
