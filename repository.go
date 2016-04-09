@@ -136,7 +136,7 @@ func (repo Repository) Get(hash string) (io.Reader, error) {
 		defer w.Close()
 
 		size := 0
-		array := make([]byte, config.Config.ChunkSize)
+		array := make([]byte, config.Config.LeafSize)
 		for {
 			read, err := cr.Read(array)
 			size += read

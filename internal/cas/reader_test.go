@@ -24,7 +24,7 @@ import (
 )
 
 
-func TestReadWithSmallerChunkSize(t *testing.T) {
+func TestReadWithSmallerLeafSize(t *testing.T) {
 
 	path := setupRepo(t)
 	defer teardownRepo(path)
@@ -33,25 +33,25 @@ func TestReadWithSmallerChunkSize(t *testing.T) {
 
 	rootKeyStr := writeTo(t, strings.NewReader(input))
 
-	config.Config.ChunkSize = uint32(1e6 + random(1e5, 2e5))
+	config.Config.LeafSize = uint32(1e6 + random(1e5, 2e5))
 
 	output := readBack(t, rootKeyStr)
 
 	assert.Equal(t, input, output, "Input and output are different")
 }
 
-func TestReadWithBiggerChunkSize(t *testing.T) {
+func TestReadWithBiggerLeafSize(t *testing.T) {
 
 	path := setupRepo(t)
 	defer teardownRepo(path)
 
 	input := strings.Repeat("AbCdEfGhIjKlMnOpQrDtUvWxYz", int((0.5+float32(random(25, 30)))*1024*1024/16))
 
-	config.Config.ChunkSize = uint32(2e6 + random(1e5, 2e5))
+	config.Config.LeafSize = uint32(2e6 + random(1e5, 2e5))
 
 	rootKeyStr := writeTo(t, strings.NewReader(input))
 
-	config.Config.ChunkSize = uint32(7e6 + random(1e5, 2e5))
+	config.Config.LeafSize = uint32(7e6 + random(1e5, 2e5))
 
 	output := readBack(t, rootKeyStr)
 

@@ -30,7 +30,7 @@ import (
 
 func MakeWriter(objType string) *Writer {
 	cw := Writer{areaDir: stageDir, objType: objType}
-	cw.chunkBuf = make([]byte, config.Config.ChunkSize)
+	cw.chunkBuf = make([]byte, config.Config.LeafSize)
 	return &cw
 }
 
@@ -59,17 +59,17 @@ func (cw *Writer) Write(p []byte) (nn int, err error) {
 
 	for bytesToWrite := uint32(len(p)); bytesToWrite > 0; {
 
-		if cw.chunkOffset == config.Config.ChunkSize {
+		if cw.chunkOffset == config.Config.LeafSize {
 			// Write out full chunk (without last chunk marker)
 			cw.flush(false)
 		}
 
-		if cw.chunkOffset + bytesToWrite < config.Config.ChunkSize {
+		if cw.chunkOffset + bytesToWrite < config.Config.LeafSize {
 			copy(cw.chunkBuf[cw.chunkOffset:], p[uint32(len(p))-bytesToWrite:])
 			cw.chunkOffset += bytesToWrite
 			bytesToWrite = 0
 		} else {
-			bytesWritten := config.Config.ChunkSize - cw.chunkOffset
+			bytesWritten := config.Config.LeafSize - cw.chunkOffset
 			copy(cw.chunkBuf[cw.chunkOffset:], p[uint32(len(p))-bytesToWrite:uint32(len(p))-bytesToWrite+bytesWritten])
 			bytesToWrite -= bytesWritten
 			cw.chunkOffset += bytesWritten
@@ -82,7 +82,7 @@ func (cw *Writer) Write(p []byte) (nn int, err error) {
 
 func (cw *Writer) flush(isLastNode bool) {
 
-	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.ChunkSize, NodeOffset: uint64(len(cw.leaves)), NodeDepth: 0, InnerHashSize: 64, IsLastNode: isLastNode}})
+	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.LeafSize, NodeOffset: uint64(len(cw.leaves)), NodeDepth: 0, InnerHashSize: 64, IsLastNode: isLastNode}})
 	blake2.Write(cw.chunkBuf[:cw.chunkOffset])
 
 	leafKey := NewKey(blake2.Sum(nil))
@@ -145,7 +145,7 @@ func (cw *Writer) Flush() (string, []byte, bool, error) {
 func computeRootBlake2(leaves []Key) (string, error) {
 
 	// Compute hash of level 1 root key
-	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.ChunkSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
+	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.LeafSize, NodeOffset: 0, NodeDepth: 1, InnerHashSize: 64, IsLastNode: true}})
 
 	// Iterate over hashes of all underlying nodes
 	for _, leave := range leaves {

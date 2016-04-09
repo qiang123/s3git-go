@@ -74,7 +74,7 @@ func TestWriteDifferentChunkSize(t *testing.T) {
 	path := setupRepo(t)
 	defer teardownRepo(path)
 
-	config.Config.ChunkSize = 1*1024*1024
+	config.Config.LeafSize = 1*1024*1024
 
 	input := strings.Repeat("0123456789abcdef", int((0.5+float32(random(5, 10)))*1024*1024/16))
 
