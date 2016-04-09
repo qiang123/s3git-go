@@ -36,7 +36,7 @@ const CONFIG = "config"
 const REMOTE_S3 = "s3"
 const REMOTE_FAKE = "fake"
 const REMOTE_ACD = "acd"
-const LeafSize = 5 * 1024 * 1024
+const LeafSizeDefault = 5 * 1024 * 1024
 
 var Config ConfigObject
 
@@ -89,7 +89,7 @@ func LoadConfig(dir string) (bool, error) {
 	}
 
 	if Config.LeafSize == 0 { // If unspecified, set to default
-		Config.LeafSize = LeafSize
+		Config.LeafSize = LeafSizeDefault
 	}
 
 	return true, nil
