@@ -220,7 +220,7 @@ func TestForkedCommitsSplit(t *testing.T) {
 }
 
 func setupRepo() (*Repository, string) {
-	path, _ := ioutil.TempDir(os.TempDir(), "s3git-test")
+	path, _ := ioutil.TempDir("", "s3git-test-")
 
 	repo, _ := InitRepository(path)
 
