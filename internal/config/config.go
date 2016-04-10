@@ -37,6 +37,7 @@ const REMOTE_S3 = "s3"
 const REMOTE_FAKE = "fake"
 const REMOTE_ACD = "acd"
 const LeafSizeDefault = 5 * 1024 * 1024
+const MaxRepoSizeDefault = 25 * 1024 * 1024 * 1024
 
 var Config ConfigObject
 
@@ -45,6 +46,7 @@ type ConfigObject struct {
 	Type            string         `json:"s3gitType"` // config
 	BasePath        string         `json:"s3gitBasePath"`
 	LeafSize        uint32         `json:"s3gitLeafSize"`
+	MaxRepoSize     uint64         `json:"s3gitMaxRepoSize"`
 	RollingHashBits int            `json:"s3gitRollingHashBits"`
 	RollingHashMin  int            `json:"s3gitRollingHashMin"`
 	Remotes         []RemoteObject `json:"s3gitRemotes"`
@@ -91,16 +93,19 @@ func LoadConfig(dir string) (bool, error) {
 	if Config.LeafSize == 0 { // If unspecified, set to default
 		Config.LeafSize = LeafSizeDefault
 	}
+	if Config.MaxRepoSize == 0 { // If unspecified, set to default
+		Config.MaxRepoSize = MaxRepoSizeDefault
+	}
 
 	return true, nil
 }
 
-func SaveConfig(dir string) error {
+func SaveConfig(dir string, leafSize uint32, maxRepoSize uint64) error {
 
-	return saveNewConfig(dir, []RemoteObject{})
+	return saveNewConfig(dir, []RemoteObject{}, leafSize, maxRepoSize)
 }
 
-func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string) error {
+func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string, leafSize uint32, maxRepoSize uint64) error {
 
 	parts := strings.Split(url, "//")
 	if len(parts) != 2 {
@@ -125,12 +130,24 @@ func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string) error {
 	remotes := []RemoteObject{}
 	remotes = append(remotes, RemoteObject{Name: "primary", Type: REMOTE_S3, S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
 
-	return saveNewConfig(dir, remotes)
+	return saveNewConfig(dir, remotes, leafSize, maxRepoSize)
 }
 
-func saveNewConfig(dir string, remotes []RemoteObject) error {
+func saveNewConfig(dir string, remotes []RemoteObject, leafSize uint32, maxRepoSize uint64) error {
 
-	configObject := ConfigObject{Version: 1, Type: CONFIG, BasePath: dir, LeafSize: LeafSize}
+	configObject := ConfigObject{Version: 1, Type: CONFIG, BasePath: dir}
+
+	if leafSize == 0 {
+		configObject.LeafSize = LeafSizeDefault
+	} else {
+		configObject.LeafSize = leafSize
+	}
+
+	if maxRepoSize == 0 {
+		configObject.MaxRepoSize = MaxRepoSizeDefault
+	} else {
+		configObject.MaxRepoSize = maxRepoSize
+	}
 
 	return saveConfig(configObject, remotes)
 }

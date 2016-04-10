@@ -30,10 +30,34 @@ type Repository struct {
 	Remotes []Remote
 }
 
-// Initialize a new repository
-func InitRepository(path string) (*Repository, error) {
+type initOptions struct {
+	leafSize uint32
+	maxRepoSize uint64
+}
 
-	config.SaveConfig(path)
+func InitOptionSetLeafSize(leafSize uint32) func(optns *initOptions) {
+	return func(optns *initOptions) {
+		optns.leafSize = leafSize
+	}
+}
+
+func InitOptionSetMaxRepoSize(maxRepoSize uint64) func(optns *initOptions) {
+	return func(optns *initOptions) {
+		optns.maxRepoSize = maxRepoSize
+	}
+}
+
+type InitOptions func(*initOptions)
+
+// Initialize a new repository
+func InitRepository(path string, options ...InitOptions) (*Repository, error) {
+
+	optns := &initOptions{}
+	for _, op := range options {
+		op(optns)
+	}
+
+	config.SaveConfig(path, optns.leafSize, optns.maxRepoSize)
 
 	return OpenRepository(path)
 }
