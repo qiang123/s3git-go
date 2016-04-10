@@ -41,11 +41,25 @@ type treeOutput struct {
 }
 
 type cloneOptions struct {
+	leafSize            uint32
+	maxRepoSize         uint64
 	accessKey           string
 	secretKey           string
 	endpoint            string
 	progressDownloading func(maxTicks int64)
 	progressProcessing  func(maxTicks int64)
+}
+
+func CloneOptionSetLeafSize(leafSize uint32) func(optns *cloneOptions) {
+	return func(optns *cloneOptions) {
+		optns.leafSize = leafSize
+	}
+}
+
+func CloneOptionSetMaxRepoSize(maxRepoSize uint64) func(optns *cloneOptions) {
+	return func(optns *cloneOptions) {
+		optns.maxRepoSize = maxRepoSize
+	}
 }
 
 func CloneOptionSetAccessKey(accessKey string) func(optns *cloneOptions) {
@@ -88,7 +102,7 @@ func Clone(url, path string, options ...CloneOptions) (*Repository, error) {
 		op(optns)
 	}
 
-	config.SaveConfigFromUrl(url, path, optns.accessKey, optns.secretKey, optns.endpoint)
+	config.SaveConfigFromUrl(url, path, optns.accessKey, optns.secretKey, optns.endpoint, optns.leafSize, optns.maxRepoSize)
 
 	repo, err := OpenRepository(path)
 	if err != nil {
