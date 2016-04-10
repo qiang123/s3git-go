@@ -204,6 +204,11 @@ func clone(client backend.Backend, progressDownloading, progressProcessing func(
 			if err != nil {
 				// TODO: Push error into error channel?
 				fmt.Println("core.GetCommitObject error: ", err)
+
+			// Mark warm and cold parents as parents
+			err = co.MarkWarmAndColdParents()
+			if err != nil {
+				errs <- fmt.Errorf("co.MarkWarmAndColdParents error: ", err)
 				return
 			}
 
