@@ -328,24 +328,22 @@ func GetLevel1(key []byte) ([]byte, string, error) {
 
 func AddLevel0Stage(hash string, size uint32) error {
 
-	hx, _ := hex.DecodeString(hash)
-	val := make([]byte, 4)
-	binary.LittleEndian.PutUint32(val, size)
-
-	err := env.Update(func(txn *lmdb.Txn) (err error) {
-		return txn.Put(dbiLevel0StageSize, hx, val, 0)
-	})
-	return err
+	return addLevel0(&dbiLevel0StageSize, hash, size)
 }
 
 func AddLevel0Cache(hash string, size uint32) error {
 
+	return addLevel0(&dbiLevel0CacheSize, hash, size)
+}
+
+func addLevel0(dbi *lmdb.DBI, hash string, size uint32) error {
+
 	hx, _ := hex.DecodeString(hash)
 	val := make([]byte, 4)
 	binary.LittleEndian.PutUint32(val, size)
 
 	err := env.Update(func(txn *lmdb.Txn) (err error) {
-		return txn.Put(dbiLevel0CacheSize, hx, val, 0)
+		return txn.Put(*dbi, hx, val, 0)
 	})
 	return err
 }
