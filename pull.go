@@ -145,7 +145,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 			}
 
 			// Delete the chunks for the tree object since we are unlikely the need it again
-			err = cas.DeleteChunksForBlob(co.S3gitTree)
+			err = cas.DeleteLeavesForBlob(co.S3gitTree)
 			if err != nil {
 				return err
 			}

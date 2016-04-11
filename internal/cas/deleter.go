@@ -22,8 +22,8 @@ import (
 	"os"
 )
 
-// Delete the chunks for a given blob
-func DeleteChunksForBlob(hash string) error {
+// Delete the leaves for a given blob
+func DeleteLeavesForBlob(hash string) error {
 
 	key, _ := hex.DecodeString(hash)
 	leafHashes, _, err := kv.GetLevel1(key)
