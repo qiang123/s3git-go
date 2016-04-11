@@ -83,7 +83,7 @@ func FetchLeafBlob(hash string, client backend.Backend) error {
 	}
 
 	// Otherwise create file
-	file, err := createLeafBlobFile(hash, cacheDir)
+	file, err := createLeafNodeFile(hash, cacheDir)
 	if err != nil {
 		return err
 	}

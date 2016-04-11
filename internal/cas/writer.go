@@ -90,7 +90,7 @@ func (cw *Writer) flush(isLastNode bool) {
 	cw.leaves = append(cw.leaves, leafKey)
 
 	// Create file
-	chunkWriter, err := createLeafBlobFile(leafKey.String(), cw.areaDir)
+	chunkWriter, err := createLeafNodeFile(leafKey.String(), cw.areaDir)
 	if err != nil {
 		return
 	}
@@ -173,7 +173,7 @@ func (cw *Writer) Close() error {
 }
 
 // Create a file for a leaf node
-func createLeafBlobFile(hash, areaDir string) (*os.File, error) {
+func createLeafNodeFile(hash, areaDir string) (*os.File, error) {
 
 	checkRepoSize()
 
