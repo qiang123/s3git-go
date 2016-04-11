@@ -17,11 +17,11 @@
 package cas
 
 import (
+	"github.com/s3git/s3git-go/internal/backend"
+	"github.com/s3git/s3git-go/internal/config"
+	"github.com/s3git/s3git-go/internal/kv"
 	"os"
 	"path"
-	"github.com/s3git/s3git-go/internal/config"
-	"github.com/s3git/s3git-go/internal/backend"
-	"github.com/s3git/s3git-go/internal/kv"
 )
 
 // Upon writing, make sure the size of the repository does not exceed the max local size,
