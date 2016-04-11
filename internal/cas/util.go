@@ -26,8 +26,52 @@ import (
 
 // Upon writing, make sure the size of the repository does not exceed the max local size,
 // prune stale chunks otherwise
-func checkRepoSize() {
-	// TODO: Implement maximum size that repo can grow to
+func checkRepoSize() error {
+
+	// TODO: [perf] Maybe cache sizes of stage & cache area as they may be expensive for large repositories
+
+	stageSize, err := kv.GetLevel0StageSize()
+	if err != nil {
+		return err
+	}
+
+	cacheSize, err := kv.GetLevel0CacheSize()
+	if err != nil {
+		return err
+	}
+
+	if stageSize+cacheSize > config.Config.MaxRepoSize {
+
+		threshold95Pct := uint64(float64(config.Config.MaxRepoSize) * 0.95)
+
+		for {
+			if cacheSize == 0 || // Stop when no leaves left in cache to delete
+				stageSize+cacheSize < threshold95Pct { // Or when we've gone under to threshold
+				break
+			}
+
+			// Get random list of leaf nodes in cache
+			leaves, err := kv.GetLevel0RandomListFromCache()
+			if err != nil {
+				return err
+			}
+
+			// Delete these leaves
+			for _, l := range leaves {
+				err = DeleteLeafNodeFromCache(l)
+				if err != nil {
+					return err
+				}
+			}
+
+			cacheSize, err = kv.GetLevel0CacheSize()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // Get the filepath for a given hash
