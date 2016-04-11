@@ -18,7 +18,6 @@ package kv
 
 import (
 	"encoding/hex"
-	"encoding/binary"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/config"
 	"github.com/bmatsuo/lmdb-go/lmdb"
@@ -326,62 +325,6 @@ func GetLevel1(key []byte) ([]byte, string, error) {
 	return nil, "", lmdb.NotFound
 }
 
-func AddLevel0Stage(hash string, size uint32) error {
-
-	return addLevel0(&dbiLevel0StageSize, hash, size)
-}
-
-func AddLevel0Cache(hash string, size uint32) error {
-
-	return addLevel0(&dbiLevel0CacheSize, hash, size)
-}
-
-func addLevel0(dbi *lmdb.DBI, hash string, size uint32) error {
-
-	hx, _ := hex.DecodeString(hash)
-	val := make([]byte, 4)
-	binary.LittleEndian.PutUint32(val, size)
-
-	err := env.Update(func(txn *lmdb.Txn) (err error) {
-		return txn.Put(*dbi, hx, val, 0)
-	})
-	return err
-}
-
-func MoveLevel0FromStageToCache(hash string) error {
-
-	hx, _ := hex.DecodeString(hash)
-
-	var val []byte
-
-	// First obtain current value
-	err := env.View(func(txn *lmdb.Txn) (err error) {
-		var err2 error
-		val, err2 = txn.Get(dbiLevel0StageSize, hx)
-		return err2
-	})
-	if err != nil {
-		return err
-	}
-
-	err = env.Update(func(txn *lmdb.Txn) (err error) {
-
-		var err2 error
-		// First delete from stage
-		err2 = txn.Del(dbiLevel0StageSize, hx, nil)
-		if err2 != nil {
-			return err2
-		}
-
-		// Then add item to cache
-		return txn.Put(dbiLevel0CacheSize, hx, val, 0)
-	})
-	if err != nil {
-		return err
-	}
-
-	return err
-}
 
 func listMdb(dbi *lmdb.DBI, query string) (<-chan []byte, error) {
 
