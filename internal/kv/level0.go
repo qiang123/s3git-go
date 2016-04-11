@@ -135,3 +135,55 @@ func RemoveLevel0FromCache(hash string) error {
 
 	return err
 }
+
+func GetLevel0RandomListFromCache() ([]string, error) {
+
+	var entries uint64
+
+	err := env.View(func(txn *lmdb.Txn) (err error) {
+		stats, err := txn.Stat(dbiLevel0CacheSize)
+		if err != nil {
+			return err
+		}
+
+		entries = stats.Entries
+
+		return nil
+	})
+	if err != nil {
+		return []string{}, err
+	}
+
+	// Just get a list of about 100 items, so compute items to skip between keys to be returned
+	itemsToSkip := entries / 100
+
+	var result []string
+	err = env.View(func(txn *lmdb.Txn) (err error) {
+		cur, err := txn.OpenCursor(dbiLevel0CacheSize)
+		if err != nil {
+			return err
+		}
+		defer cur.Close()
+
+		for {
+			var k []byte
+			for i := uint64(0); i < 1 + itemsToSkip; i++ {
+				var err2 error
+				k, _, err2 = cur.Get(nil, nil, lmdb.Next)
+				if lmdb.IsNotFound(err2) {
+					return nil
+				}
+				if err2 != nil {
+					return err2
+				}
+			}
+
+			result = append(result, hex.EncodeToString(k))
+		}
+	})
+	if err != nil {
+		return []string{}, err
+	}
+
+	return result, nil
+}
