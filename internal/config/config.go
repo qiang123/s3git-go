@@ -36,7 +36,10 @@ const CONFIG = "config"
 const REMOTE_S3 = "s3"
 const REMOTE_FAKE = "fake"
 const REMOTE_ACD = "acd"
+
+const LeafSizeMinimum = 1024
 const LeafSizeDefault = 5 * 1024 * 1024
+const MaxRepoSizeMinimum = 1024 * 1024
 const MaxRepoSizeDefault = 25 * 1024 * 1024 * 1024
 
 var Config ConfigObject
@@ -139,12 +142,16 @@ func saveNewConfig(dir string, remotes []RemoteObject, leafSize uint32, maxRepoS
 
 	if leafSize == 0 {
 		configObject.LeafSize = LeafSizeDefault
+	} else if leafSize < LeafSizeMinimum {
+		configObject.LeafSize = LeafSizeMinimum
 	} else {
 		configObject.LeafSize = leafSize
 	}
 
 	if maxRepoSize == 0 {
 		configObject.MaxRepoSize = MaxRepoSizeDefault
+	} else if maxRepoSize < MaxRepoSizeMinimum {
+		configObject.MaxRepoSize = MaxRepoSizeMinimum
 	} else {
 		configObject.MaxRepoSize = maxRepoSize
 	}
