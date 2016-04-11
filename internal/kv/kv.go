@@ -91,7 +91,10 @@ func OpenDatabase() error {
 		}
 
 		// list of top most commits
-		dbiLevel1CommitsIsParent, _ = txn.OpenDBI("l1commitsisparent", lmdb.Create)
+		dbiLevel1CommitsIsParent, err = txn.OpenDBI("l1commitsisparent", lmdb.Create)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
