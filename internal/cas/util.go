@@ -203,7 +203,7 @@ func MoveBlobToCache(hash string) error {
 		}
 	}
 
-	// TODO: Consider removing directories that are left empty in the .stage area
+	// TODO: [impr] Consider removing directories that are left empty in the .stage area
 	//   However be aware of files moving in at potentially the same time (in a seperate process)
 	//   Maybe do in separate maintenance step???
 	return nil
