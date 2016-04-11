@@ -79,3 +79,44 @@ func MoveLevel0FromStageToCache(hash string) error {
 	return err
 }
 
+func GetLevel0StageSize() (uint64, error) {
+
+	return getLevel0Size(&dbiLevel0StageSize)
+}
+
+func GetLevel0CacheSize() (uint64, error) {
+
+	return getLevel0Size(&dbiLevel0CacheSize)
+}
+
+func getLevel0Size(dbi *lmdb.DBI) (uint64, error) {
+
+	var size uint64
+
+	err := env.View(func(txn *lmdb.Txn) (err error) {
+		cur, err := txn.OpenCursor(*dbi)
+		if err != nil {
+			return err
+		}
+		defer cur.Close()
+
+		for {
+			_, v, err := cur.Get(nil, nil, lmdb.Next)
+			if lmdb.IsNotFound(err) {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+
+			leafSize := binary.LittleEndian.Uint32(v)
+			size += uint64(leafSize)
+		}
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return size, nil
+}
