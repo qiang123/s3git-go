@@ -88,7 +88,7 @@ func (cw *Writer) flush(isLastNode bool) {
 	leafKey := NewKey(blake2.Sum(nil))
 	cw.leaves = append(cw.leaves, leafKey)
 
-	chunkWriter, err := createBlobFile(leafKey.String(), cw.areaDir)
+	chunkWriter, err := createLeafBlobFile(leafKey.String(), cw.areaDir)
 	if err != nil {
 		return
 	}
@@ -162,7 +162,8 @@ func (cw *Writer) Close() error {
 	return nil
 }
 
-func createBlobFile(hash, areaDir string) (*os.File, error) {
+// Create a file for a leaf node
+func createLeafBlobFile(hash, areaDir string) (*os.File, error) {
 
 	checkRepoSize()
 
