@@ -18,6 +18,7 @@ package kv
 
 import (
 	"encoding/hex"
+	"encoding/binary"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/config"
 	"github.com/bmatsuo/lmdb-go/lmdb"
@@ -42,6 +43,9 @@ var dbiLevel1Blobs lmdb.DBI
 var dbiLevel1Commits lmdb.DBI
 var dbiLevel1Prefixes lmdb.DBI
 var dbiLevel1Trees lmdb.DBI
+
+var dbiLevel0CacheSize lmdb.DBI
+var dbiLevel0StageSize lmdb.DBI
 
 // KV database containing overview of added/removed blobs in stage
 var dbiStage lmdb.DBI
@@ -90,6 +94,16 @@ func OpenDatabase() error {
 			return err
 		}
 
+		// Level 0 leaf databases
+		dbiLevel0CacheSize, err = txn.OpenDBI("l0cache", lmdb.Create)
+		if err != nil {
+			return err
+		}
+		dbiLevel0StageSize, err = txn.OpenDBI("l0stage", lmdb.Create)
+		if err != nil {
+			return err
+		}
+
 		// list of top most commits
 		dbiLevel1CommitsIsParent, err = txn.OpenDBI("l1commitsisparent", lmdb.Create)
 		if err != nil {
@@ -99,7 +113,7 @@ func OpenDatabase() error {
 		return nil
 	})
 	if err != nil {
-		// ...
+		return err
 	}
 
 	// From https://godoc.org/github.com/bmatsuo/lmdb-go/lmdb
@@ -310,6 +324,65 @@ func GetLevel1(key []byte) ([]byte, string, error) {
 	}
 
 	return nil, "", lmdb.NotFound
+}
+
+func AddLevel0Stage(hash string, size uint32) error {
+
+	hx, _ := hex.DecodeString(hash)
+	val := make([]byte, 4)
+	binary.LittleEndian.PutUint32(val, size)
+
+	err := env.Update(func(txn *lmdb.Txn) (err error) {
+		return txn.Put(dbiLevel0StageSize, hx, val, 0)
+	})
+	return err
+}
+
+func AddLevel0Cache(hash string, size uint32) error {
+
+	hx, _ := hex.DecodeString(hash)
+	val := make([]byte, 4)
+	binary.LittleEndian.PutUint32(val, size)
+
+	err := env.Update(func(txn *lmdb.Txn) (err error) {
+		return txn.Put(dbiLevel0CacheSize, hx, val, 0)
+	})
+	return err
+}
+
+func MoveLevel0FromStageToCache(hash string) error {
+
+	hx, _ := hex.DecodeString(hash)
+
+	var val []byte
+
+	// First obtain current value
+	err := env.View(func(txn *lmdb.Txn) (err error) {
+		var err2 error
+		val, err2 = txn.Get(dbiLevel0StageSize, hx)
+		return err2
+	})
+	if err != nil {
+		return err
+	}
+
+	err = env.Update(func(txn *lmdb.Txn) (err error) {
+
+		var err2 error
+		// First delete from stage
+		err2 = txn.Del(dbiLevel0StageSize, hx, nil)
+		if err2 != nil {
+			return err2
+		}
+
+		// Then add item to cache
+		return txn.Put(dbiLevel0CacheSize, hx, val, 0)
+	})
+	if err != nil {
+		return err
+	}
+
+	return err
 }
 
 func listMdb(dbi *lmdb.DBI, query string) (<-chan []byte, error) {

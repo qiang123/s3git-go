@@ -21,6 +21,7 @@ import (
 	"path"
 	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/backend"
+	"github.com/s3git/s3git-go/internal/kv"
 )
 
 // Upon writing, make sure the size of the repository does not exceed the max local size,
@@ -94,6 +95,18 @@ func FetchLeafBlob(hash string, client backend.Backend) error {
 		return err
 	}
 
+	// Get file size
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+
+	// Add size of leaf to KV store
+	err = addLeafBlobFileToKV(hash, cacheDir, uint32(fi.Size()))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -132,7 +145,14 @@ func MoveBlobToCache(hash string) error {
 		}
 		newPath := hashDir + leaveHash[4:]
 
+		// Rename file in order to move from stage to cache area
 		err = os.Rename(oldPath, newPath)
+		if err != nil {
+			return err
+		}
+
+		// Move size in KV store from stage to cache
+		err = kv.MoveLevel0FromStageToCache(leaveHash)
 		if err != nil {
 			return err
 		}

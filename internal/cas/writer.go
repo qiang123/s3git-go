@@ -26,6 +26,7 @@ import (
 	"github.com/s3git/s3git-go/internal/kv"
 	"encoding/hex"
 	"github.com/bmatsuo/lmdb-go/lmdb"
+	"fmt"
 )
 
 func MakeWriter(objType string) *Writer {
@@ -79,7 +80,7 @@ func (cw *Writer) Write(p []byte) (nn int, err error) {
 	return len(p), nil
 }
 
-
+// Write leaf node to disk
 func (cw *Writer) flush(isLastNode bool) {
 
 	blake2 := blake2.New(&blake2.Config{Size: 64, Tree: &blake2.Tree{Fanout: 0, MaxDepth: 2, LeafSize: config.Config.LeafSize, NodeOffset: uint64(len(cw.leaves)), NodeDepth: 0, InnerHashSize: 64, IsLastNode: isLastNode}})
@@ -88,13 +89,22 @@ func (cw *Writer) flush(isLastNode bool) {
 	leafKey := NewKey(blake2.Sum(nil))
 	cw.leaves = append(cw.leaves, leafKey)
 
+	// Create file
 	chunkWriter, err := createLeafBlobFile(leafKey.String(), cw.areaDir)
 	if err != nil {
 		return
 	}
+
+	// Write leaf blob contents to file
 	chunkWriter.Write(cw.chunkBuf[:cw.chunkOffset])
 	defer chunkWriter.Close()
 	chunkWriter.Sync()
+
+	// Add size of leaf to KV store
+	err = addLeafBlobFileToKV(leafKey.String(), cw.areaDir, cw.chunkOffset)
+	if err != nil {
+		return
+	}
 
 	// Start over in buffer
 	cw.chunkOffset = 0
@@ -174,4 +184,15 @@ func createLeafBlobFile(hash, areaDir string) (*os.File, error) {
 	}
 
 	return os.Create(hashDir + hash[4:])
+}
+
+func addLeafBlobFileToKV(hash, areaDir string, size uint32) error {
+
+	if areaDir == stageDir {
+		return kv.AddLevel0Stage(hash, size)
+	} else if areaDir == cacheDir {
+		return kv.AddLevel0Cache(hash, size)
+	} else {
+		return errors.New(fmt.Sprintf("Undefined area: %s", areaDir))
+	}
 }
