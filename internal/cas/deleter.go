@@ -34,12 +34,28 @@ func DeleteLeavesForBlob(hash string) error {
 	for i := 0; i < len(leafHashes); i += KeySize {
 		leafKey := hex.EncodeToString(leafHashes[i : i+KeySize])
 
-		// Test if available in cache directory
-		nameInCache := getBlobPathWithinArea(leafKey, cacheDir)
-		if _, err := os.Stat(nameInCache); err == nil {
-			if err := os.Remove(nameInCache); err != nil {
-				return err
-			}
+		err = DeleteLeafNodeFromCache(leafKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Delete an individual leaf node from the caching area
+func DeleteLeafNodeFromCache(leafKey string) error {
+
+	// Test if available in cache directory
+	nameInCache := getBlobPathWithinArea(leafKey, cacheDir)
+	if _, err := os.Stat(nameInCache); err == nil {
+		if err := os.Remove(nameInCache); err != nil {
+			return err
+		}
+
+		err := kv.RemoveLevel0FromCache(leafKey)
+		if err != nil {
+			return err
 		}
 	}
 
