@@ -120,3 +120,18 @@ func getLevel0Size(dbi *lmdb.DBI) (uint64, error) {
 
 	return size, nil
 }
+
+func RemoveLevel0FromCache(hash string) error {
+
+	hx, _ := hex.DecodeString(hash)
+
+	err := env.Update(func(txn *lmdb.Txn) (err error) {
+
+		return txn.Del(dbiLevel0CacheSize, hx, nil)
+	})
+	if err != nil {
+		return err
+	}
+
+	return err
+}
