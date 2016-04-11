@@ -44,9 +44,10 @@ func checkRepoSize() error {
 
 		threshold95Pct := uint64(float64(config.Config.MaxRepoSize) * 0.95)
 
+		// Prune leaf nodes in caching area in a number of iterations...
 		for {
-			if cacheSize == 0 || // Stop when no leaves left in cache to delete
-				stageSize+cacheSize < threshold95Pct { // Or when we've gone under to threshold
+			if cacheSize == 0 || // Stop when no leaves are left in cache area to delete
+				stageSize+cacheSize < threshold95Pct { // Or when we've gone under the threshold
 				break
 			}
 
