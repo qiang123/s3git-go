@@ -183,6 +183,8 @@ func (repo Repository) Get(hash string) (io.Reader, error) {
 type Statistics struct {
 	Objects   uint64
 	TotalSize uint64
+	StageSize uint64
+	CacheSize uint64
 }
 
 // Get statistics for the repository
@@ -193,5 +195,15 @@ func (repo Repository) Statistics() (*Statistics, error) {
 		return nil, err
 	}
 
-	return &Statistics{Objects: entries, TotalSize: 0}, nil
+	stageSize, err := kv.GetLevel0StageSize()
+	if err != nil {
+		return nil, err
+	}
+
+	cacheSize, err := kv.GetLevel0CacheSize()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Statistics{Objects: entries, TotalSize: 0, StageSize: stageSize, CacheSize: cacheSize}, nil
 }
