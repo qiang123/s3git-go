@@ -17,7 +17,6 @@
 package s3git
 
 import (
-	"bytes"
 	"encoding/hex"
 	"errors"
 	"github.com/s3git/s3git-go/internal/cas"
@@ -159,22 +158,7 @@ func (repo Repository) Get(hash string) (io.Reader, error) {
 
 		defer w.Close()
 
-		size := 0
-		array := make([]byte, config.Config.LeafSize)
-		for {
-			read, err := cr.Read(array)
-			size += read
-			if read > 0 {
-				_, err := io.Copy(w, bytes.NewBuffer(array[:read]))
-				if err != nil {
-					panic(err)
-				}
-			}
-			if err == io.EOF {
-				break
-			}
-		}
-
+		io.Copy(w, cr)
 	}(cr, w)
 
 	return r, nil
