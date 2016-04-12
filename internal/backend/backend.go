@@ -23,6 +23,7 @@ import (
 	"github.com/s3git/s3git-go/internal/backend/fake"
 	"github.com/s3git/s3git-go/internal/backend/s3"
 	"github.com/s3git/s3git-go/internal/backend/acd"
+	"github.com/s3git/s3git-go/internal/backend/dynamodb"
 )
 
 type Backend interface {
@@ -51,6 +52,8 @@ func GetDefaultClient() (Backend, error) {
 		return fake.MakeClient(config.Config.Remotes[0]), nil
 	case config.REMOTE_ACD:
 		return acd.MakeClient(config.Config.Remotes[0]), nil
+	case config.REMOTE_DYNAMODB:
+		return dynamodb.MakeClient(config.Config.Remotes[0]), nil
 	default: // config.REMOTE_S3
 		return s3.MakeClient(config.Config.Remotes[0]), nil
 	}

@@ -36,6 +36,7 @@ const CONFIG = "config"
 const REMOTE_S3 = "s3"
 const REMOTE_FAKE = "fake"
 const REMOTE_ACD = "acd"
+const REMOTE_DYNAMODB = "dynamodb"
 
 const LeafSizeMinimum = 1024
 const LeafSizeDefault = 5 * 1024 * 1024
@@ -67,6 +68,12 @@ type RemoteObject struct {
 	S3AccessKey string `json:"S3AccessKey"`
 	S3SecretKey string `json:"S3SecretKey"`
 	S3Endpoint  string `json:"S3Endpoint"`
+
+	// Remote object for DynamoDB
+	DynamoDbTable     string `json:"DynamoDbTable"`
+	DynamoDbRegion    string `json:"DynamoDbRegion"`
+	DynamoDbAccessKey string `json:"DynamoDbAccessKey"`
+	DynamoDbSecretKey string `json:"DynamoDbSecretKey"`
 
 	MinioInsecure bool `json:"MinioInsecure"`
 
