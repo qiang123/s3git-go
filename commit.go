@@ -137,6 +137,9 @@ func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 		defer close(result)
 
 		for {
+			if len(inputs) == 0 {
+				return // nothing to do (new repo?) --> we are done
+			}
 			if len(inputs) == 1 {
 				result <- inputs[0]
 				input, done, err := getCommit(inputs[0].Parent)
