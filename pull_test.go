@@ -61,3 +61,8 @@ func testCreateFakeRepo(t *testing.T, fakeDir string) {
 	err := repoFake.Push(true, func(total int64) {})
 	assert.Nil(t, err)
 }
+
+func TestBadRepo(t *testing.T) {
+
+	// TODO: [test] Add test case to detect bad/incomplete remotes (i.e. tree objects missing)
+}
