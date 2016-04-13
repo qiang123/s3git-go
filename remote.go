@@ -17,10 +17,7 @@
 package s3git
 
 import (
-	"errors"
-	"fmt"
 	"github.com/s3git/s3git-go/internal/config"
-	"strings"
 )
 
 type Remote struct {
@@ -47,31 +44,12 @@ func (repo Repository) RemoteAdd(name, resource, accessKey, secretKey string, op
 		op(optns)
 	}
 
-	// TODO: 'Ping' remote to check credentials
-
-	parts := strings.Split(resource, "//")
-	if len(parts) != 2 {
-		return errors.New(fmt.Sprintf("Bad resource for cloning (missing '//' separator): %s", resource))
+	remote, err := config.CreateRemote(name, resource, accessKey, secretKey, optns.endpoint)
+	if err != nil {
+		return err
 	}
 
-	var region, endpoint string
-	if optns.endpoint == "" {
-		// Just look for region when endpoint not explicitly specified
-		var err error
-		region, err = config.GetRegionForBucket(parts[1], accessKey, secretKey)
-		if err != nil {
-			return err
-		}
-	} else {
-		endpoint = optns.endpoint
-	}
-
-	if region == "" {
-		// TODO: Remove hard coded region
-		region = "us-east-1"
-	}
-
-	return config.AddRemote(name, parts[1], region, accessKey, secretKey, endpoint)
+	return config.AddRemote(remote)
 }
 
 func (repo Repository) remoteAddFake(name, directory string) error {
