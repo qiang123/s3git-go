@@ -166,6 +166,33 @@ func (c *Client) List(prefix string, action func(key string)) ([]string, error) 
 	return result, nil
 }
 
+func (c *Client) createTable() error {
+
+	svc := dynamodb.New(session.New(c.getAwsConfig()))
+
+	params := &dynamodb.CreateTableInput{
+		AttributeDefinitions: []*dynamodb.AttributeDefinition{ // Required
+			{ // Required
+				AttributeName: aws.String("K"), // Required
+				AttributeType: aws.String("B"),    // Required
+			},
+		},
+		KeySchema: []*dynamodb.KeySchemaElement{ // Required
+			{ // Required
+				AttributeName: aws.String("K"), // Required
+				KeyType:       aws.String("HASH"), // Required
+			},
+		},
+		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{ // Required
+			ReadCapacityUnits:  aws.Int64(1), // Required
+			WriteCapacityUnits: aws.Int64(1), // Required
+		},
+		TableName: aws.String(c.Table), // Required
+	}
+	_, err := svc.CreateTable(params)
+	return err
+}
+
 func (c *Client) getAwsConfig() *aws.Config {
 
 	s3Config := &aws.Config{
