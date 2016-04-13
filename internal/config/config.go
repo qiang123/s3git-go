@@ -21,10 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -112,39 +108,6 @@ func LoadConfig(dir string) (bool, error) {
 
 func SaveConfig(dir string, leafSize uint32, maxRepoSize uint64) error {
 
-	return saveNewConfig(dir, []RemoteObject{}, leafSize, maxRepoSize)
-}
-
-func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string, leafSize uint32, maxRepoSize uint64) error {
-
-	parts := strings.Split(url, "//")
-	if len(parts) != 2 {
-		return errors.New(fmt.Sprintf("Bucket missing for cloning: %s", url))
-	}
-	bucket := parts[1]
-	accessKey = getDefaultValue(accessKey, "S3GIT_S3_ACCESS_KEY")
-	secretKey = getDefaultValue(secretKey, "S3GIT_S3_SECRET_KEY")
-	endpoint = getDefaultValue(endpoint, "S3GIT_S3_ENDPOINT")
-	var region string
-	if endpoint == "" {
-		var err error
-		region, err = GetRegionForBucket(bucket, accessKey, secretKey)
-		if err != nil {
-			return err
-		}
-	} else {
-		region = "us-east-1" // TODO: Remove hard-coded region for endpoints
-	}
-	region = getDefaultValue(region, "S3GIT_S3_REGION") // Allow to be overriden when set explicitly
-
-	remotes := []RemoteObject{}
-	remotes = append(remotes, RemoteObject{Name: "primary", Type: REMOTE_S3, S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
-
-	return saveNewConfig(dir, remotes, leafSize, maxRepoSize)
-}
-
-func saveNewConfig(dir string, remotes []RemoteObject, leafSize uint32, maxRepoSize uint64) error {
-
 	configObject := ConfigObject{Version: 1, Type: CONFIG, BasePath: dir}
 
 	if leafSize == 0 {
@@ -163,7 +126,27 @@ func saveNewConfig(dir string, remotes []RemoteObject, leafSize uint32, maxRepoS
 		configObject.MaxRepoSize = maxRepoSize
 	}
 
-	return saveConfig(configObject, remotes)
+	return saveConfig(configObject, []RemoteObject{})
+}
+
+func SaveConfigFromUrl(url, dir, accessKey, secretKey, endpoint string, leafSize uint32, maxRepoSize uint64) error {
+
+	err := SaveConfig(dir, leafSize, maxRepoSize)
+	if err != nil {
+		return err
+	}
+
+	remote, err := CreateRemote("primary", url, accessKey, secretKey, endpoint)
+	if err != nil {
+		return err
+	}
+
+	err = AddRemote(remote)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func saveConfig(configObject ConfigObject, remotes []RemoteObject) error {
@@ -194,11 +177,11 @@ func saveConfig(configObject ConfigObject, remotes []RemoteObject) error {
 	return nil
 }
 
-func AddRemote(name, bucket, region, accessKey, secretKey, endpoint string) error {
+func AddRemote(remote *RemoteObject) error {
 
 	for _, r := range Config.Remotes {
-		if r.Name == name {
-			return errors.New(fmt.Sprintf("Remote already exists with name: %s", name))
+		if r.Name == remote.Name {
+			return errors.New(fmt.Sprintf("Remote already exists with name: %s", remote.Name))
 		}
 	}
 
@@ -208,7 +191,7 @@ func AddRemote(name, bucket, region, accessKey, secretKey, endpoint string) erro
 	}
 
 	remotes := []RemoteObject{}
-	remotes = append(remotes, RemoteObject{Name: name, Type: REMOTE_S3, S3Bucket: bucket, S3Region: region, S3AccessKey: accessKey, S3SecretKey: secretKey, S3Endpoint: endpoint, MinioInsecure: true})
+	remotes = append(remotes, *remote)
 
 	return saveConfig(Config, remotes)
 }
@@ -230,41 +213,4 @@ func AddFakeRemote(name, directory string) error {
 	remotes = append(remotes, RemoteObject{Name: "fake", Type: REMOTE_FAKE, FakeDirectory: directory})
 
 	return saveConfig(Config, remotes)
-}
-
-// Get the region for a bucket or return US Standard otherwise
-func GetRegionForBucket(bucket, accessKey, secretKey string) (string, error) {
-
-	var region string
-
-	// Determine region for bucket
-	if accessKey != "" && secretKey != "" {
-		svc := s3.New(session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""), Region: aws.String("us-east-1")}))
-
-		out, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: aws.String(bucket)})
-		if err != nil {
-			return "", err
-		}
-		if out.LocationConstraint != nil {
-			region = *out.LocationConstraint
-		}
-	}
-
-	// Or default to US Standard if not found
-	if region == "" {
-		region = "us-east-1"
-	}
-
-	return region, nil
-}
-
-func getDefaultValue(def, envName string) string {
-
-	val := def
-
-	envVal := os.Getenv(envName)
-	if envVal != "" {
-		val = envVal
-	}
-	return val
 }
