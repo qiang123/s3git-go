@@ -53,7 +53,7 @@ func GetDefaultClient() (Backend, error) {
 	case config.REMOTE_ACD:
 		return acd.MakeClient(config.Config.Remotes[0]), nil
 	case config.REMOTE_DYNAMODB:
-		return dynamodb.MakeClient(config.Config.Remotes[0]), nil
+		return dynamodb.MakeClient(config.Config.Remotes[0])
 	default: // config.REMOTE_S3
 		return s3.MakeClient(config.Config.Remotes[0]), nil
 	}
