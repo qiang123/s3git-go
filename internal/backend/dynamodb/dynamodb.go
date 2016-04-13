@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/s3git/s3git-go/internal/config"
 	"io"
+	"time"
 	"io/ioutil"
 )
 
@@ -38,14 +39,36 @@ type Client struct {
 const KEY_NAME = "K"
 const VAL_NAME = "V"
 
-func MakeClient(remote config.RemoteObject) *Client {
+func MakeClient(remote config.RemoteObject) (*Client, error) {
 
-	// TODO: Check that table exists, if not create
-
-	return &Client{
+	client := &Client{
 		Table:     remote.DynamoDbTable,
 		Region:    remote.DynamoDbRegion,
 		AccessKey: remote.DynamoDbAccessKey, SecretKey: remote.DynamoDbSecretKey}
+
+	exists, _, err := client.checkTableExists()
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		err := client.createTable()
+		if err != nil {
+			return nil, err
+		}
+
+		for {
+			time.Sleep(1 * time.Second)
+			_, created, err := client.checkTableExists()
+			if err != nil {
+				return nil, err
+			}
+
+			if created {
+				break
+			}
+		}
+	}
+	return client, nil
 }
 
 // Upload a chunk to DynamoDB
