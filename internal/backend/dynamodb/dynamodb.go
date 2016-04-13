@@ -19,6 +19,7 @@ package dynamodb
 import (
 	"encoding/hex"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -191,6 +192,30 @@ func (c *Client) createTable() error {
 	}
 	_, err := svc.CreateTable(params)
 	return err
+}
+
+func (c *Client) checkTableExists() (exists, created bool, err error) {
+
+	svc := dynamodb.New(session.New(c.getAwsConfig()))
+
+	params := &dynamodb.DescribeTableInput{
+		TableName: aws.String(c.Table), // Required
+	}
+	resp, err := svc.DescribeTable(params)
+
+	if err != nil {
+		if _, ok := err.(awserr.Error); ok {
+			if reqErr, ok := err.(awserr.RequestFailure); ok {
+				// A service error occurred
+				if reqErr.StatusCode() == 400 { // Table not found
+					return false, false, nil
+				}
+			}
+		}
+		return false, false, err
+	}
+
+	return true, *resp.Table.TableStatus == "ACTIVE", nil
 }
 
 func (c *Client) getAwsConfig() *aws.Config {
