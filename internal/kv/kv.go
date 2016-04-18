@@ -129,9 +129,12 @@ func AddToStage(key string) error {
 
 	hx, _ := hex.DecodeString(key)
 
-	txn, _ := env.BeginTxn(nil, 0)
-	txn.Put(dbiStage, hx, nil, 0)
-	txn.Commit()
+	err := env.Update(func(txn *lmdb.Txn) (err error) {
+		return txn.Put(dbiStage, hx, nil, 0)
+	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
