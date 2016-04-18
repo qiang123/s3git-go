@@ -132,7 +132,7 @@ func Clone(url, path string, options ...CloneOptions) (*Repository, error) {
 	return repo, nil
 }
 
-func treeDownloader(trees <-chan treeInput, results chan<- treeOutput) {
+func treeDownloader(trees <-chan treeInput, results chan<- treeOutput, errs chan<- error) {
 
 	for t := range trees {
 		// Pull down tree object
@@ -140,18 +140,16 @@ func treeDownloader(trees <-chan treeInput, results chan<- treeOutput) {
 
 		to, err := core.GetTreeObject(t.hash)
 		if err != nil {
-			// TODO: push error to error channel?
-			fmt.Println("getTreeObject error: ", err)
+			errs <- fmt.Errorf("core.GetTreeObject", err)
 			return
 		}
 
 		results <- treeOutput{added: to.S3gitAdded}
 
 		// Delete the chunks for the tree object since we are unlikely the need it again
-		err = cas.DeleteChunksForBlob(t.hash)
+		err = cas.DeleteLeavesForBlob(t.hash)
 		if err != nil {
-			// TODO: push error to error channel?
-			fmt.Println("deleteChunksForBlob error: ", err)
+			errs <- fmt.Errorf("DeleteChunksForBlob error: ", err)
 			return
 		}
 	}
@@ -171,6 +169,8 @@ func clone(client backend.Backend, progressDownloading, progressProcessing func(
 	var wg sync.WaitGroup
 	trees := make(chan treeInput)
 	results := make(chan treeOutput)
+	// TODO: Handle error(s) read from error channel
+	errs := make(chan error)
 
 	// Start multiple downloaders in parallel
 	for i := 0; i <= 16; i++ {
@@ -178,7 +178,7 @@ func clone(client backend.Backend, progressDownloading, progressProcessing func(
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			treeDownloader(trees, results)
+			treeDownloader(trees, results, errs)
 		}()
 	}
 
@@ -193,8 +193,7 @@ func clone(client backend.Backend, progressDownloading, progressProcessing func(
 			cas.PullBlobDownToLocalDisk(prefix, kv.PREFIX, client)
 			po, err := core.GetPrefixObject(prefix)
 			if err != nil {
-				// TODO: Push error into error channel?
-				fmt.Println("core.GetCommitObject error: ", err)
+				errs <- fmt.Errorf("core.GetCommitObject error: ", err)
 				return
 			}
 
@@ -202,8 +201,9 @@ func clone(client backend.Backend, progressDownloading, progressProcessing func(
 			cas.PullBlobDownToLocalDisk(po.S3gitFollowMe, kv.COMMIT, client)
 			co, err := core.GetCommitObject(po.S3gitFollowMe)
 			if err != nil {
-				// TODO: Push error into error channel?
-				fmt.Println("core.GetCommitObject error: ", err)
+				errs <- fmt.Errorf("core.GetCommitObject error: ", err)
+				return
+			}
 
 			// Mark warm and cold parents as parents
 			err = co.MarkWarmAndColdParents()
