@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/s3git/s3git-go/internal/config"
+	"time"
 )
 
 type Client struct {
@@ -124,6 +125,17 @@ func (l *lister) eachPage(page *s3.ListObjectsOutput, more bool) bool {
 	}
 
 	return true
+}
+
+func (c *Client) GetPresignedUrl(key string) (string, error) {
+
+	svc := s3.New(session.New(), c.getAwsConfig())
+	req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(c.Bucket),
+		Key:    aws.String(key),
+	})
+
+	 return req.Presign(60 * time.Minute)
 }
 
 func (c *Client) getAwsConfig() *aws.Config {
