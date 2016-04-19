@@ -42,6 +42,7 @@ var dbiLevel1Blobs lmdb.DBI
 var dbiLevel1Commits lmdb.DBI
 var dbiLevel1Prefixes lmdb.DBI
 var dbiLevel1Trees lmdb.DBI
+var dbiLevel1Snapshots lmdb.DBI
 
 var dbiLevel0CacheSize lmdb.DBI
 var dbiLevel0StageSize lmdb.DBI
@@ -89,6 +90,10 @@ func OpenDatabase() error {
 			return err
 		}
 		dbiLevel1Trees, err = txn.OpenDBI("l1trees", lmdb.Create)
+		if err != nil {
+			return err
+		}
+		dbiLevel1Snapshots, err = txn.OpenDBI("l1snapshots", lmdb.Create)
 		if err != nil {
 			return err
 		}
@@ -229,6 +234,11 @@ func ListLevel1Trees() (<-chan []byte, error) {
 	return listMdb(&dbiLevel1Trees, "")
 }
 
+func ListLevel1Snapshots() (<-chan []byte, error) {
+
+	return listMdb(&dbiLevel1Snapshots, "")
+}
+
 func ListLevel1Blobs(query string) (<-chan []byte, error) {
 
 	return listMdb(&dbiLevel1Blobs, query)
@@ -250,6 +260,7 @@ const BLOB = "blob"
 const COMMIT = "commit"
 const PREFIX = "prefix"
 const TREE = "tree"
+const SNAPSHOT = "snapshot"
 
 func getDbForObjectType(objType string) *lmdb.DBI {
 
@@ -263,6 +274,8 @@ func getDbForObjectType(objType string) *lmdb.DBI {
 		dbi = &dbiLevel1Prefixes
 	case TREE:
 		dbi = &dbiLevel1Trees
+	case SNAPSHOT:
+		dbi = &dbiLevel1Snapshots
 	default:
 		panic(fmt.Sprintf("Bad type: %s", objType))
 	}
@@ -323,6 +336,13 @@ func GetLevel1(key []byte) ([]byte, string, error) {
 		return nil, "", err
 	} else if !lmdb.IsNotFound(err) {
 		return val, TREE, err
+	}
+
+	val, err = txn.Get(dbiLevel1Snapshots, key)
+	if err != nil && !lmdb.IsNotFound(err) {
+		return nil, "", err
+	} else if !lmdb.IsNotFound(err) {
+		return val, SNAPSHOT, err
 	}
 
 	return nil, "", lmdb.NotFound
