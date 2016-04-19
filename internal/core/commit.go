@@ -39,16 +39,17 @@ type commitObject struct {
 	S3gitCommitterEmail string   `json:"s3gitCommitterEmail"` // Email of person doing the commit (from git)
 	S3gitBranch         string   `json:"s3gitBranch"`         // Name of the branch
 	S3gitTree           string   `json:"s3gitTree"`           // Tree object for the commit
+	S3gitSnapshot       string   `json:"s3gitSnapshot"`       // Snapshot object for the commit (can be empty)
 	S3gitWarmParents    []string `json:"s3gitWarmParents"`    // List of parent commits up the (possibly split) chain
 	S3gitColdParents    []string `json:"s3gitColdParents"`    // Parent commits that are no longer part of the chain
 	S3gitTimeStamp      string   `json:"s3gitTimeStamp"`
 	S3gitPadding        string   `json:"s3gitPadding"`
 }
 
-func makeCommitObject(message, branch, tree string, warmParents, coldParents []string, name, email string) *commitObject {
+func makeCommitObject(message, branch, snapshot, tree string, warmParents, coldParents []string, name, email string) *commitObject {
 
 	co := commitObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: kv.COMMIT}, S3gitMessage: message, S3gitBranch: branch,
-		S3gitTree: tree, S3gitWarmParents: warmParents, S3gitColdParents: coldParents}
+		S3gitTree: tree, S3gitSnapshot: snapshot, S3gitWarmParents: warmParents, S3gitColdParents: coldParents}
 
 	co.S3gitCommitterName = name
 	co.S3gitCommitterEmail = email
@@ -102,7 +103,7 @@ func GetCommitObjectFromString(s string) (*commitObject, error) {
 	return &co, nil
 }
 
-func StoreCommitObject(message, branch string, warmParents, coldParents []string, added <-chan []byte, removed []string) (hash string, empty bool, err error) {
+func StoreCommitObject(message, branch, snapshot string, warmParents, coldParents []string, added <-chan []byte, removed []string) (hash string, empty bool, err error) {
 
 	// Create a tree object for this commit
 	treeObject := makeTreeObject(added, removed)
@@ -121,7 +122,7 @@ func StoreCommitObject(message, branch string, warmParents, coldParents []string
 	}
 
 	// Create commit object
-	commitObject := makeCommitObject(message, branch, treeHash, warmParents, coldParents, name, email)
+	commitObject := makeCommitObject(message, branch, snapshot, treeHash, warmParents, coldParents, name, email)
 
 	buf := new(bytes.Buffer)
 
