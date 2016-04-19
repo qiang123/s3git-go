@@ -33,15 +33,15 @@ type Commit struct {
 
 // Perform a commit for the repository
 func (repo Repository) Commit(message string) (hash string, empty bool, err error) {
-	return repo.commit(message, "master", []string{})
+	return repo.commit(message, "master", "", []string{})
 }
 
 // Perform a commit for the named branch of the repository
 func (repo Repository) CommitToBranch(message, branch string) (hash string, empty bool, err error) {
-	return repo.commit(message, branch, []string{})
+	return repo.commit(message, branch, "", []string{})
 }
 
-func (repo Repository) commit(message, branch string, parents []string) (hash string, empty bool, err error) {
+func (repo Repository) commit(message, branch, snapshot string, parents []string) (hash string, empty bool, err error) {
 
 	warmParents := []string{}
 	coldParents := []string{}
@@ -70,7 +70,7 @@ func (repo Repository) commit(message, branch string, parents []string) (hash st
 		}
 	}
 
-	return repo.commitWithWarmAndColdParents(message, branch, warmParents, coldParents)
+	return repo.commitWithWarmAndColdParents(message, branch, snapshot, warmParents, coldParents)
 }
 
 func contains(s []string, e string) bool {
@@ -82,7 +82,7 @@ func contains(s []string, e string) bool {
 	return false
 }
 
-func (repo Repository) commitWithWarmAndColdParents(message, branch string, warmParents, coldParents []string) (hash string, empty bool, err error) {
+func (repo Repository) commitWithWarmAndColdParents(message, branch, snapshot string, warmParents, coldParents []string) (hash string, empty bool, err error) {
 
 	list, err := kv.ListStage()
 	if err != nil {
@@ -90,7 +90,7 @@ func (repo Repository) commitWithWarmAndColdParents(message, branch string, warm
 	}
 
 	// Create commit object on disk
-	commitHash, empty, err := core.StoreCommitObject(message, branch, warmParents, coldParents, list, []string{})
+	commitHash, empty, err := core.StoreCommitObject(message, branch, snapshot, warmParents, coldParents, list, []string{})
 	if err != nil {
 		return "", false, err
 	}
