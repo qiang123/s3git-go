@@ -29,6 +29,11 @@ func (repo Repository) MakeUnique(prefix string) (string, error) {
 		return "", errList
 	}
 
+	return getUnique(list)
+}
+
+func getUnique(list <-chan string) (string, error) {
+
 	err := errors.New("Not found (be less specific)")
 	hash := ""
 	for elem := range list {
