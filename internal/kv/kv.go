@@ -193,7 +193,7 @@ func CommitIsParent(key []byte) (bool, error) {
 
 func ListTopMostCommits() (<-chan []byte, error) {
 
-	list, err := ListLevel1Commits()
+	list, err := ListLevel1Commits("")
 	if err != nil {
 		return nil, err
 	}
@@ -219,9 +219,9 @@ func ListTopMostCommits() (<-chan []byte, error) {
 	return result, nil
 }
 
-func ListLevel1Commits() (<-chan []byte, error) {
+func ListLevel1Commits(query string) (<-chan []byte, error) {
 
-	return listMdb(&dbiLevel1Commits, "")
+	return listMdb(&dbiLevel1Commits, query)
 }
 
 func ListLevel1Prefixes() (<-chan []byte, error) {
