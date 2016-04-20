@@ -27,15 +27,11 @@ import (
 	"io"
 	"strings"
 	"path/filepath"
-	"io/ioutil"
-	"encoding/hex"
 	"strconv"
 )
 
 // TODO: Implement gitignore like filtering
-// TODO: Implement deletion of 'old' files for checkout
-// TODO: Implement snapshot log
-// TODO: Use commit hash instead of snapshot hash
+// TODO: Implement snapshot log (filter normal commits)
 
 const FileModeNoPerm = "100000" // Permissions still need to be ORred in
 const DirectoryMode = "040000"
@@ -71,65 +67,138 @@ func StoreSnapshotObject(path string, addFn func(filename string) (string, error
 	return snapshotObject.write(buf, kv.SNAPSHOT)
 }
 
-func CheckoutSnapshot(hash string, fHydrate func(hash, filename string, perm os.FileMode)) error {
+func SnapshotCheckout(path, hash string, fWrite func(hash, filename string, perm os.FileMode)) error {
 
-	path, _ := ioutil.TempDir("", "snapshot-checkout-")
-	fmt.Println(path)
+	return iterateSnapshots(hash, path, func(entry SnapshotEntry, base string) {
 
-	hydrate := true
+		perm, _ := strconv.ParseUint(entry.Mode[3:len(entry.Mode)], 8, 0)
+		fWrite(entry.Blob, filepath.Join(base, entry.Name), os.FileMode(perm))
 
-	return iterateSnapshots(hash, "", func(entry SnapshotEntry, base string) {
-		fmt.Println(filepath.Join(path, base, entry.Name))
+	}, func(base string) {
+		err := os.MkdirAll(filepath.Join(base), os.ModePerm)
+		if err != nil {
+			return
+		}
+	}, func(base string, entries []SnapshotEntry) {
 
-		if hydrate {
+		fileList, err := getFileList(base)
+		if err != nil {
+			return
+		}
 
-			perm, _ := strconv.ParseUint(entry.Mode[3:len(entry.Mode)], 8, 0)
-			fHydrate(entry.Blob, filepath.Join(path, base, entry.Name), os.FileMode(perm))
+		fileRemaining, entryRemaining := getDifferenceForEntries(fileList, entries)
 
-		} else {
-			hex, _ := hex.DecodeString(entry.Blob)
-			leafHashes, _, err := kv.GetLevel1(hex)
-			err = ioutil.WriteFile(filepath.Join(path, base, entry.Name), leafHashes, os.ModePerm)
+		for _, remove := range fileRemaining {
+			fmt.Println("++++ RemoveAll:", filepath.Join(base, remove))
+			err := os.RemoveAll(filepath.Join(base, remove))
 			if err != nil {
 				return
 			}
-
 		}
 
-	}, func(base string) {
-		err := os.MkdirAll(filepath.Join(path, base), os.ModePerm)
-		if err != nil {
+		if len(entryRemaining) > 0 {
+			// TODO: Log error, this should not occur as any 'to be added' files should already have been created (upon leaving the directory)
 			return
 		}
 	})
 }
 
+func SnapshotStatus(path, hash string) error {
 
-func ListSnapshot(hash string, f func(entry SnapshotEntry, base string), fNewDir func(base string)) error {
+	modified, added, removed := []string{}, []string{}, []string{}
 
-	return iterateSnapshots(hash, "", f, fNewDir)
+	err := iterateSnapshots(hash, path, func(entry SnapshotEntry, base string) {
+
+		deduped, _, _, err := cas.CheckLevel1HashFollowedByLeafHashes(filepath.Join(base, entry.Name))
+		if err != nil {
+			return
+		}
+		if deduped {
+			// Nothing to do, file has not been modified
+		} else {
+
+			// Compute sum over contents of file...
+			digest, err := cas.Sum(filepath.Join(base, entry.Name))
+			if err != nil {
+				return
+			}
+
+			// ... and check to entry.Blob
+			if digest != entry.Blob {
+				modified = append(modified, filepath.Join(base, entry.Name))
+			}
+		}
+
+	}, func(base string) {
+	}, func(base string, entries []SnapshotEntry) {
+
+		fileList, err := getFileList(base)
+		if err != nil {
+			return
+		}
+
+		fileAdded, fileRemoved := getDifferenceForEntries(fileList, entries)
+
+		for _, fileNew := range fileAdded {
+			added = append(added, filepath.Join(base, fileNew))
+		}
+		for _, fileRemoved := range fileRemoved {
+			removed = append(removed, filepath.Join(base, fileRemoved))
+		}
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, fileNew := range added {
+		fmt.Println("     New:", fileNew)
+	}
+	for _, fileModified := range modified {
+		fmt.Println("Modified:", fileModified)
+	}
+	for _, fileRemoved := range removed {
+		fmt.Println(" Removed:", fileRemoved)
+	}
+
+	return nil
 }
 
-func iterateSnapshots(hash, path string, f func(entry SnapshotEntry, base string), fNewDir func(base string)) error {
+func SnapshotList(hash string, fFile func(entry SnapshotEntry, base string), fEnteringDir func(base string), fLeavingDir func(base string, entries []SnapshotEntry)) error {
+
+	return iterateSnapshots(hash, "", fFile, fEnteringDir, fLeavingDir)
+}
+
+func iterateSnapshots(hash, path string, fFile func(entry SnapshotEntry, base string), fEnteringDir func(base string), fLeavingDir func(base string, entries []SnapshotEntry)) error {
+
+	// TODO: [perf] See if we can speed this up by running in parallel
 
 	so, err := GetSnapshotObject(hash)
 	if err != nil {
 		return err
 	}
 
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
+	fEnteringDir(path)
+
 	for _, entry := range so.S3gitEntries {
 		if entry.Mode == DirectoryMode {
-			fNewDir(filepath.Join(path, entry.Name))
-			iterateSnapshots(entry.Blob, filepath.Join(path, entry.Name), f, fNewDir)
+			iterateSnapshots(entry.Blob, filepath.Join(path, entry.Name), fFile, fEnteringDir, fLeavingDir)
 		} else {
-			f(entry, path)
+			fFile(entry, path)
 		}
 	}
+	fLeavingDir(path, so.S3gitEntries)
+
 	return nil
 }
 
 func makeSnapshotObject(path string, addFn func(filename string) (string, error)) *snapshotObject {
 
+	// Create snapshot object
 	so := snapshotObject{coreObject: coreObject{S3gitVersion: 1, S3gitType: kv.SNAPSHOT}}
 
 	path, err := filepath.Abs(path)
@@ -137,15 +206,18 @@ func makeSnapshotObject(path string, addFn func(filename string) (string, error)
 		return nil
 	}
 
-	fileList, err := filepath.Glob(filepath.Join(path, "*"))
+	// Get list of files to add to snapshot object
+	fileList, err := getFileList(path)
 	if err != nil {
 		return nil
 	}
 
 	entries := []SnapshotEntry{}
 
+	// Iterate over list of files
 	for _, filename := range fileList {
 
+		// Get details of file
 		stat, err := os.Stat(filename)
 		if err != nil {
 			return nil
@@ -155,16 +227,17 @@ func makeSnapshotObject(path string, addFn func(filename string) (string, error)
 		fmi, _ := strconv.ParseUint(FileModeNoPerm, 8, 0)
 		filemode := fmt.Sprintf("%06o", os.FileMode(fmi) | stat.Mode().Perm())
 
-		if stat.IsDir() {
+		if stat.IsDir() { // for directories
 
 			filemode = DirectoryMode
 			var err error
+			// Create snapshot object for (sub)directory
 			key, err = StoreSnapshotObject(filename, addFn)
 			if err != nil {
 				return nil
 			}
 
-		} else {
+		} else { // for files
 
 			var err error
 			key, err = addFn(filename)
@@ -173,6 +246,7 @@ func makeSnapshotObject(path string, addFn func(filename string) (string, error)
 			}
 		}
 
+		// Add entry to table of snapshot object
 		filenameLeaf, err := filepath.Rel(path, filename)
 		if err != nil {
 			return nil
@@ -224,4 +298,51 @@ func GetSnapshotObjectFromString(s string) (*snapshotObject, error) {
 	}
 
 	return &so, nil
+}
+
+func getDifferenceForEntries(filelist []string, entries []SnapshotEntry) ([]string, []string) {
+
+	fileOnly, entryOnly := []string{}, []string{}
+	m := map [string]int{}
+
+	for _, filePath := range filelist {
+
+		_, file := filepath.Split(filePath)
+		m[file] = 1
+	}
+	for _, entry := range entries {
+		m[entry.Name] = m[entry.Name] + 2
+	}
+
+	for key, val := range m {
+		if val == 1 {
+			fileOnly = append(fileOnly, key)
+		} else if val == 2 {
+			entryOnly = append(entryOnly, key)
+		}
+	}
+
+	return fileOnly, entryOnly
+}
+
+func getFileList(path string) ([]string, error) {
+
+	fileList, err := filepath.Glob(filepath.Join(path, "*"))
+	if err != nil {
+		return []string{}, err
+	}
+	return filterIgnoresFromFilelist(fileList), nil
+}
+
+func filterIgnoresFromFilelist(filelist []string) []string {
+
+	// Iterate backwards to avoid deleting from while iterating over the slice
+	for i := len(filelist) - 1; i >= 0; i-- {
+		_, f := filepath.Split(filelist[i])
+		if f == ".s3git" || f == ".s3git.config" {
+			filelist = append(filelist[:i], filelist[i+1:]...)
+		}
+	}
+
+	return filelist
 }
