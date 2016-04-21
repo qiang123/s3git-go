@@ -89,7 +89,6 @@ func SnapshotCheckout(path, hash string, fWrite func(hash, filename string, perm
 		fileRemaining, entryRemaining := getDifferenceForEntries(fileList, entries)
 
 		for _, remove := range fileRemaining {
-			fmt.Println("++++ RemoveAll:", filepath.Join(base, remove))
 			err := os.RemoveAll(filepath.Join(base, remove))
 			if err != nil {
 				return

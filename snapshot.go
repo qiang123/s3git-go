@@ -85,11 +85,9 @@ func (repo Repository) SnapshotCheckout(path, commit string, dedupe bool) error 
 			}
 
 			if digest == hash {	// Contents unchanged --> exit out early
-				fmt.Println("Contents unchanged -- not rewriting file:", filename)
 				return
 			}
 		}
-
 
 		r, err := repo.Get(hash)
 		if err != nil {
