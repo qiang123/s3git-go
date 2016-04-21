@@ -31,7 +31,6 @@ import (
 )
 
 // TODO: Implement gitignore like filtering
-// TODO: Implement snapshot log (filter normal commits)
 
 const FileModeNoPerm = "100000" // Permissions still need to be ORred in
 const DirectoryMode = "040000"
