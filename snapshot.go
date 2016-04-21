@@ -120,8 +120,39 @@ func (repo Repository) SnapshotCheckout(path, commit string, dedupe bool) error 
 	return core.SnapshotCheckout(path, snapshot, fWrite)
 }
 
+type snapshotListOptions struct {
+	showHash bool
+	presignedUrls bool
+	jsonOutput bool
+}
+
+func SnapshotListOptionSetShowHash(showHash bool) func(optns *snapshotListOptions) {
+	return func(optns *snapshotListOptions) {
+		optns.showHash = showHash
+	}
+}
+
+func SnapshotListOptionSetPresignedUrls(presignedUrls bool) func(optns *snapshotListOptions) {
+	return func(optns *snapshotListOptions) {
+		optns.presignedUrls = presignedUrls
+	}
+}
+
+func SnapshotListOptionSetJsonOutput(jsonOutput bool) func(optns *snapshotListOptions) {
+	return func(optns *snapshotListOptions) {
+		optns.jsonOutput = jsonOutput
+	}
+}
+
+type SnapshotListOptions func(*snapshotListOptions)
+
 // List a snapshot for the repository
-func (repo Repository) SnapshotList(commit string, presignedUrls bool) error {
+func (repo Repository) SnapshotList(commit string, options ...SnapshotListOptions) error {
+
+	optns := &snapshotListOptions{}
+	for _, op := range options {
+		op(optns)
+	}
 
 	snapshot, err := getSnapshotFromCommit(commit)
 	if err != nil {
@@ -129,7 +160,7 @@ func (repo Repository) SnapshotList(commit string, presignedUrls bool) error {
 	}
 
 	funcPresignedUrl := func(hash string) (string, error) { return "", nil }
-	if presignedUrls {
+	if optns.presignedUrls {
 		client, err := backend.GetDefaultClient()
 		if err != nil {
 			return err
@@ -147,6 +178,8 @@ func (repo Repository) SnapshotList(commit string, presignedUrls bool) error {
 
 	// List snapshot
 	err = core.SnapshotList(snapshot, func(entry core.SnapshotEntry, base string) {
+
+		// TODO: Dump result in JSON format if requested
 
 		url, _ := funcPresignedUrl(entry.Blob)
 		if url != "" {
