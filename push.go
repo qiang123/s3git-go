@@ -114,8 +114,7 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 		// Check if there is a snapshot object
 		if co.S3gitSnapshot != "" {
 
-			// Just push snapshot object (no need to read it as it does not reference any new objects)
-			_, err = pushBlob(co.S3gitSnapshot, nil, client)
+			err = pushSnapshotWithChildren(co.S3gitSnapshot, client)
 			if err != nil {
 				return err
 			}
@@ -141,6 +140,28 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 	return nil
 }
 
+func pushSnapshotWithChildren(hash string, client backend.Backend) error {
+
+	// Get snapshot object
+	so, err := core.GetSnapshotObject(hash)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range so.S3gitEntries {
+		if entry.IsDirectory() {
+			err = pushSnapshotWithChildren(entry.Blob, client)
+		}
+	}
+
+	// Push snapshot object
+	_, err = pushBlob(hash, nil, client)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 // Push a blob to the back end store
 func pushBlob(hash string, size *uint64, client backend.Backend) (newlyUploaded bool, err error) {
 
