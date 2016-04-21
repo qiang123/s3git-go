@@ -21,13 +21,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"github.com/s3git/s3git-go/internal/cas"
 	"github.com/s3git/s3git-go/internal/kv"
 	"io"
-	"strings"
+	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // TODO: Implement gitignore like filtering
@@ -37,14 +37,14 @@ const DirectoryMode = "040000"
 
 type snapshotObject struct {
 	coreObject
-	S3gitEntries    []SnapshotEntry `json:"s3gitEntries"`
-	S3gitPadding    string   `json:"s3gitPadding"`
+	S3gitEntries []SnapshotEntry `json:"s3gitEntries"`
+	S3gitPadding string          `json:"s3gitPadding"`
 }
 
 type SnapshotEntry struct {
-	Mode string `json:"mode"`	// *nix filemode
-	Name string `json:"name"`	// filename
-	Blob string `json:"blob"`   // pointer to blob
+	Mode string `json:"mode"` // *nix filemode
+	Name string `json:"name"` // filename
+	Blob string `json:"blob"` // pointer to blob
 }
 
 func StoreSnapshotObject(path string, addFn func(filename string) (string, error)) (hash string, err error) {
@@ -223,7 +223,7 @@ func makeSnapshotObject(path string, addFn func(filename string) (string, error)
 
 		var key string
 		fmi, _ := strconv.ParseUint(FileModeNoPerm, 8, 0)
-		filemode := fmt.Sprintf("%06o", os.FileMode(fmi) | stat.Mode().Perm())
+		filemode := fmt.Sprintf("%06o", os.FileMode(fmi)|stat.Mode().Perm())
 
 		if stat.IsDir() { // for directories
 
@@ -250,7 +250,7 @@ func makeSnapshotObject(path string, addFn func(filename string) (string, error)
 			return nil
 		}
 
-		entries = append(entries, SnapshotEntry{Mode: filemode, Name: filenameLeaf, Blob: key })
+		entries = append(entries, SnapshotEntry{Mode: filemode, Name: filenameLeaf, Blob: key})
 	}
 
 	so.S3gitEntries = entries
@@ -301,7 +301,7 @@ func GetSnapshotObjectFromString(s string) (*snapshotObject, error) {
 func getDifferenceForEntries(filelist []string, entries []SnapshotEntry) ([]string, []string) {
 
 	fileOnly, entryOnly := []string{}, []string{}
-	m := map [string]int{}
+	m := map[string]int{}
 
 	for _, filePath := range filelist {
 
