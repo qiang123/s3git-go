@@ -184,6 +184,8 @@ func (repo Repository) SnapshotList(commit string, options ...SnapshotListOption
 		url, _ := funcPresignedUrl(entry.Blob)
 		if url != "" {
 			fmt.Printf("%s --> %s\n", filepath.Join(base, entry.Name), url)
+		} else if optns.showHash {
+			fmt.Println(filepath.Join(base, entry.Name), entry.Blob)
 		} else {
 			fmt.Println(filepath.Join(base, entry.Name))
 		}
