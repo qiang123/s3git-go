@@ -90,22 +90,35 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 			return err
 		}
 
-		// Get tree object
-		to, err := core.GetTreeObject(co.S3gitTree)
-		if err != nil {
-			return err
+		// Check if there is a tree object
+		if co.S3gitTree != "" {
+			// Get tree object
+			to, err := core.GetTreeObject(co.S3gitTree)
+			if err != nil {
+				return err
+			}
+
+			// first push all added blobs in this commit ...
+			err = pushBlobRange(to.S3gitAdded, nil, hydrated, client)
+			if err != nil {
+				return err
+			}
+
+			// then push tree object
+			_, err = pushBlob(co.S3gitTree, nil, client)
+			if err != nil {
+				return err
+			}
 		}
 
-		// first push all added blobs in this commit ...
-		err = pushBlobRange(to.S3gitAdded, nil, hydrated, client)
-		if err != nil {
-			return err
-		}
+		// Check if there is a snapshot object
+		if co.S3gitSnapshot != "" {
 
-		// then push tree object
-		_, err = pushBlob(co.S3gitTree, nil, client)
-		if err != nil {
-			return err
+			// Just push snapshot object (no need to read it as it does not reference any new objects)
+			_, err = pushBlob(co.S3gitSnapshot, nil, client)
+			if err != nil {
+				return err
+			}
 		}
 
 		// then push commit object
