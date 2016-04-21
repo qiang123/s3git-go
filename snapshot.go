@@ -64,7 +64,7 @@ func (repo Repository) SnapshotCreate(path, message string) (hash string, empty 
 }
 
 // Checkout a snapshot for the repository
-func (repo Repository) SnapshotCheckout(path, commit string, hydrate bool) error {
+func (repo Repository) SnapshotCheckout(path, commit string, dedupe bool) error {
 
 	snapshot, err := getSnapshotFromCommit(commit)
 	if err != nil {
@@ -73,7 +73,7 @@ func (repo Repository) SnapshotCheckout(path, commit string, hydrate bool) error
 
 	// TODO: Check that status is clean (create 'stashing' like behaviour for temp changes?)
 
-	// For hydrate is true  --> store full contents
+	// For dedupe is false  --> store full contents
 	fWriteHydrate := func(hash, filename string, mode os.FileMode) {
 
 		// Compute hash in order to prevent rewriting the content when file already exists
@@ -104,7 +104,7 @@ func (repo Repository) SnapshotCheckout(path, commit string, hydrate bool) error
 		io.Copy(f, r)
 	}
 
-	// For hydrate is false --> store level 1 hash first (64 bytes) followed by all leaf hashes as contents
+	// For dedupe is true --> store all leaf hashes as contents followed by final 64 bytes with level 1 hash
 	fWriteDeduped := func(hash, filename string, mode os.FileMode) {
 
 		// TODO: Can we prevent (re)writing the content (run a check when file exists)?
@@ -113,10 +113,10 @@ func (repo Repository) SnapshotCheckout(path, commit string, hydrate bool) error
 	}
 
 	var fWrite func(hash, filename string, perm os.FileMode)
-	if hydrate {
-		fWrite = fWriteHydrate
-	} else {
+	if dedupe {
 		fWrite = fWriteDeduped
+	} else {
+		fWrite = fWriteHydrate
 	}
 
 	return core.SnapshotCheckout(path, snapshot, fWrite)
