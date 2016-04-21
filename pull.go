@@ -119,7 +119,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 			return err
 		}
 
-		{
+		if co.S3gitTree != "" {
 			// Now pull down tree object
 			treeName, treeBytes, err := fetchBlobTempFileAndContents(co.S3gitTree, client)
 			if err != nil {
@@ -151,6 +151,14 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 			}
 		}
 
+		if co.S3gitSnapshot != "" {
+
+			err = pullSnapshotWithChildren(co.S3gitSnapshot, client)
+			if err != nil {
+				return err
+			}
+		}
+
 		// Add commit object to cas
 		_, err = cas.StoreBlobInCache(commitName, kv.COMMIT)
 		if err != nil {
@@ -166,6 +174,32 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 
 	// Add prefix object to cas
 	_, err = cas.StoreBlobInCache(prefixName, kv.PREFIX)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func pullSnapshotWithChildren(hash string, client backend.Backend) error {
+
+	// Now pull down snapshot object
+	snapshotName, snapshotBytes, err := fetchBlobTempFileAndContents(hash, client)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(snapshotName)
+
+	so, err := core.GetSnapshotObjectFromString(string(snapshotBytes))
+
+	for _, entry := range so.S3gitEntries {
+		if entry.IsDirectory() {
+			err = pullSnapshotWithChildren(entry.Blob, client)
+		}
+	}
+
+	// Add snapshot object to cas
+	_, err = cas.StoreBlobInCache(snapshotName, kv.SNAPSHOT)
 	if err != nil {
 		return err
 	}
