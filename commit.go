@@ -29,6 +29,7 @@ type Commit struct {
 	Message   string
 	TimeStamp string
 	Parent    string
+	IsSnapshot bool
 }
 
 // Perform a commit for the repository
@@ -112,8 +113,25 @@ func (repo Repository) commitWithWarmAndColdParents(message, branch, snapshot st
 	return commitHash, false, nil
 }
 
+type listCommitOptions struct {
+	onlySnapshots bool
+}
+
+func ListCommitOptionSetOnlySnapshots(onlySnapshots bool) func(optns *listCommitOptions) {
+	return func(optns *listCommitOptions) {
+		optns.onlySnapshots = onlySnapshots
+	}
+}
+
+type ListCommitOptions func(*listCommitOptions)
+
 // List the commits for a repository
-func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
+func (repo Repository) ListCommits(branch string, options ...ListCommitOptions) (<-chan Commit, error) {
+
+	optns := &listCommitOptions{}
+	for _, op := range options {
+		op(optns)
+	}
 
 	commits, err := kv.ListTopMostCommits()
 	if err != nil {
@@ -141,7 +159,7 @@ func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 				return // nothing to do (new repo?) --> we are done
 			}
 			if len(inputs) == 1 {
-				result <- inputs[0]
+				sendCommitResult(result, inputs[0], optns.onlySnapshots)
 				input, done, err := getCommit(inputs[0].Parent)
 				if err != nil {
 					return
@@ -157,7 +175,7 @@ func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 					// Same commit object so discard second instance
 					pos := 0
 					inputs = append(inputs[0:pos], inputs[pos+1:len(inputs)]...)
-					result <- inputs[pos]
+					sendCommitResult(result, inputs[pos], optns.onlySnapshots)
 
 					input, done, err := getCommit(inputs[pos].Parent)
 					if err != nil {
@@ -168,7 +186,7 @@ func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 					inputs[pos] = *input
 
 				} else if t1.After(t2) {
-					result <- inputs[0]
+					sendCommitResult(result, inputs[0], optns.onlySnapshots)
 
 					input, done, err := getCommit(inputs[0].Parent)
 					if err != nil {
@@ -178,7 +196,7 @@ func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 					}
 					inputs[0] = *input
 				} else {
-					result <- inputs[1]
+					sendCommitResult(result, inputs[1], optns.onlySnapshots)
 
 					input, done, err := getCommit(inputs[1].Parent)
 					if err != nil {
@@ -195,6 +213,12 @@ func (repo Repository) ListCommits(branch string) (<-chan Commit, error) {
 	return result, nil
 }
 
+func sendCommitResult(result chan<- Commit, cmt Commit, onlySnapshots bool) {
+	if !onlySnapshots || onlySnapshots && cmt.IsSnapshot {
+		result <- cmt
+	}
+}
+
 func getCommit(commit string) (*Commit, bool, error) {
 	if commit == "" {
 		return nil, true, nil // we are done
@@ -203,7 +227,7 @@ func getCommit(commit string) (*Commit, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-	result := Commit{Hash: commit, Message: co.S3gitMessage, TimeStamp: co.S3gitTimeStamp}
+	result := Commit{Hash: commit, Message: co.S3gitMessage, TimeStamp: co.S3gitTimeStamp, IsSnapshot: co.S3gitSnapshot != ""}
 	if len(co.S3gitWarmParents) == 1 {
 		result.Parent = co.S3gitWarmParents[0]
 	} else if len(co.S3gitWarmParents) > 1 {
