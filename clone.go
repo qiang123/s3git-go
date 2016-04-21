@@ -212,7 +212,16 @@ func clone(client backend.Backend, progressDownloading, progressProcessing func(
 				return
 			}
 
-			trees <- treeInput{hash: co.S3gitTree, client: client}
+			if co.S3gitTree != "" {
+				trees <- treeInput{hash: co.S3gitTree, client: client}
+			}
+
+			if co.S3gitSnapshot != "" {
+				err = pullSnapshotWithChildren(co.S3gitSnapshot, client)
+				if err != nil {
+					return
+				}
+			}
 
 			progressDownloading(int64(len(prefixesInBackend)))
 		}
