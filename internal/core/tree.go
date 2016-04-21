@@ -77,7 +77,7 @@ func GetTreeObject(hash string) (*treeObject, error) {
 
 	cr := cas.MakeReader(hash)
 	if cr == nil {
-		return nil, errors.New(fmt.Sprint("Failed to read hash %s", hash))
+		return nil, errors.New(fmt.Sprint("Failed to read hash", hash))
 	}
 
 	buf := bytes.NewBuffer(nil)

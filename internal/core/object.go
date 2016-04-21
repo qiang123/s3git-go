@@ -52,7 +52,7 @@ func readBlob(hash string) (string, error) {
 
 	cr := cas.MakeReader(hash)
 	if cr == nil {
-		return "", errors.New(fmt.Sprintf("Failed to read hash %s", hash))
+		return "", errors.New(fmt.Sprintf("Failed to read hash", hash))
 	}
 
 	buf := bytes.NewBuffer(nil)
