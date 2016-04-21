@@ -47,6 +47,10 @@ type SnapshotEntry struct {
 	Blob string `json:"blob"` // pointer to blob
 }
 
+func (sse *SnapshotEntry) IsDirectory() bool {
+	return sse.Mode[0:3] == DirectoryMode[0:3]
+}
+
 func StoreSnapshotObject(path string, addFn func(filename string) (string, error)) (hash string, err error) {
 
 	// Create snapshot object
