@@ -102,7 +102,10 @@ func Clone(url, path string, options ...CloneOptions) (*Repository, error) {
 		op(optns)
 	}
 
-	config.SaveConfigFromUrl(url, path, optns.accessKey, optns.secretKey, optns.endpoint, optns.leafSize, optns.maxRepoSize)
+	err := config.SaveConfigFromUrl(url, path, optns.accessKey, optns.secretKey, optns.endpoint, optns.leafSize, optns.maxRepoSize)
+	if err != nil {
+		return nil, err
+	}
 
 	repo, err := OpenRepository(path)
 	if err != nil {

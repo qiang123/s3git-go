@@ -53,7 +53,7 @@ func CreateRemote(name, resource, accessKey, secretKey, endpoint string) (*Remot
 			var err error
 			region, err = getRegionForBucket(bucket, accessKey, secretKey)
 			if err != nil {
-				return nil, err
+				return nil, errors.New(fmt.Sprintln(err, "Bad credentials?"))
 			}
 		} else {
 			// TODO: 'Ping' remote to check credentials
