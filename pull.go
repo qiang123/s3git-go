@@ -152,7 +152,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 		}
 
 		if co.S3gitSnapshot != "" {
-
+			// TODO: We don't necessarily have to fetch the snapshot objects upon pulling, we could fetch them on demand
 			err = pullSnapshotWithChildren(co.S3gitSnapshot, client)
 			if err != nil {
 				return err
