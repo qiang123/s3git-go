@@ -59,7 +59,7 @@ func openRoot(hash string) ([]Key, error) {
 	if len(leafHashes) == 0 {
 
 		var err error
-		leafHashes, err = pullDownOnDemand(hash)
+		leafHashes, err = PullDownOnDemand(hash)
 		if err != nil {
 			return nil, err
 		}
@@ -71,8 +71,9 @@ func openRoot(hash string) ([]Key, error) {
 	return leaves, nil
 }
 
-// Pull a blob on demand from the back end store
-func pullDownOnDemand(hash string) ([]byte, error) {
+// Pull a blob on demand from the back end store.
+// It also adds the object to the KV index
+func PullDownOnDemand(hash string) ([]byte, error) {
 
 	// TODO: [perf] implement streaming mode for large blobs, spawn off multiple GET range-headers
 
@@ -162,7 +163,7 @@ func (cr *Reader) Read(p []byte) (n int, err error) {
 
 				// Chunk is missing, load file from back end
 				// TODO: [perf] Ideally optimize here to just get the missing chunk (not whole file)
-				_, err = pullDownOnDemand(cr.hash)
+				_, err = PullDownOnDemand(cr.hash)
 				if err != nil {
 					return 0, err
 				}
