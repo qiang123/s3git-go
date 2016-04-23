@@ -98,6 +98,12 @@ func pullDownOnDemand(hash string) ([]byte, error) {
 		return nil, err
 	}
 
+	// Store leaf hashes to under hash key to prevent fetching content again
+	err = kv.AddToLevel1(b, leafHashes, objType)
+	if err != nil {
+		return nil, err
+	}
+
 	return leafHashes, nil
 }
 
