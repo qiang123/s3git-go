@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // TODO: Implement gitignore like filtering
@@ -103,6 +104,98 @@ func SnapshotCheckout(path, hash string, fWrite func(hash, filename string, perm
 			return
 		}
 	})
+}
+
+// Warm the cache for a given snapshot by pulling blobs in parallel
+func warmCacheForCheckout(hash string) error {
+
+	const pullBlobsRoutines = 50
+
+	var wgDirs, wgBlobs sync.WaitGroup
+	var chanDirs = make(chan string, pullBlobsRoutines*4)
+	var chanBlobs = make(chan string, pullBlobsRoutines*4)
+	var chanErrors = make(chan error, pullBlobsRoutines*4)
+
+	for i := 0; i < 10; i++ {
+
+		// Start routines for iterating over the snapshot hierarchy
+		go func() {
+			for hash := range chanDirs {
+
+				func () {
+					defer wgDirs.Done()
+
+					so, err := GetSnapshotObject(hash)
+					if err != nil {
+						chanErrors <- err
+						return
+					}
+
+					for _, entry := range so.S3gitEntries {
+						if entry.IsDirectory() {
+							// Push new snapshot object
+							wgDirs.Add(1)
+							chanDirs <- entry.Blob
+						} else {
+							// Push new blob to pull down
+							wgBlobs.Add(1)
+							chanBlobs <- entry.Blob
+						}
+					}
+				}()
+			}
+		}()
+	}
+
+	for i := 0; i < pullBlobsRoutines; i++ {
+
+		// Start routines for pulling down the blobs
+		go func() {
+			for hashBlob := range chanBlobs {
+
+				func () {
+					fmt.Println("Pulling down", hashBlob)
+					defer wgBlobs.Done()
+
+					_, err := cas.PullDownOnDemand(hashBlob)
+					if err != nil {
+						chanErrors <- err
+						return
+					}
+				}()
+			}
+		}()
+	}
+
+	// Push hash for root snapshot object to start processing
+	wgDirs.Add(1)
+	wgBlobs.Add(1)	// 'Fake' blobs waitgroup into minimally staying open until Dirs are all processed (see below)
+	chanDirs <- hash
+
+	go func() {
+		fmt.Println("wgDirs started")
+		wgDirs.Wait()
+		fmt.Println("wgDirs completed")
+		wgBlobs.Done()	// Signal to blobs waitgroup that it can close
+		close(chanDirs)
+	}()
+
+	go func() {
+		fmt.Println("wgBlobs started")
+		wgBlobs.Wait()
+		fmt.Println("wgBlobs completed")
+		close(chanBlobs)
+		close(chanErrors)
+	}()
+
+	var err error
+	for e := range chanErrors {
+		if e != nil {
+			err = e
+		}
+	}
+
+	return err
 }
 
 func SnapshotStatus(path, hash string) error {
