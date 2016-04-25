@@ -173,17 +173,13 @@ func warmCacheForCheckout(hash string) error {
 	chanDirs <- hash
 
 	go func() {
-		fmt.Println("wgDirs started")
 		wgDirs.Wait()
-		fmt.Println("wgDirs completed")
 		wgBlobs.Done()	// Signal to blobs waitgroup that it can close
 		close(chanDirs)
 	}()
 
 	go func() {
-		fmt.Println("wgBlobs started")
 		wgBlobs.Wait()
-		fmt.Println("wgBlobs completed")
 		close(chanBlobs)
 		close(chanErrors)
 	}()
