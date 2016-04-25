@@ -154,7 +154,6 @@ func warmCacheForCheckout(hash string) error {
 			for hashBlob := range chanBlobs {
 
 				func () {
-					fmt.Println("Pulling down", hashBlob)
 					defer wgBlobs.Done()
 
 					_, err := cas.PullDownOnDemand(hashBlob)
