@@ -55,7 +55,7 @@ func openRoot(hash string) ([]Key, error) {
 		return nil, err
 	}
 
-	// Has blob already been pulled down to disk?
+	// Has blob not yet been pulled down to disk?
 	if len(leafHashes) == 0 {
 
 		var err error
@@ -251,6 +251,8 @@ func StoreBlobInCache(name, objType string) ([]byte, error) {
 	return leafHashes, nil
 }
 
+
+// PullBlobDownToLocalDisk. This function does not add the blob to the KV index.
 func PullBlobDownToLocalDisk(hash, objType string, client backend.Backend) ([]byte, error) {
 
 	// TODO: [perf] Remove work around by using separate file
