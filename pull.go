@@ -133,7 +133,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 			}
 
 			// Cache root keys for all added blobs in this commit ...
-			err = cacheKeysForBlobs(to.S3gitAdded)
+			err = cacheKeysInKV(to.S3gitAdded, kv.BLOB)
 			if err != nil {
 				return err
 			}
@@ -152,8 +152,7 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 		}
 
 		if co.S3gitSnapshot != "" {
-			// TODO: We don't necessarily have to fetch the snapshot objects upon pulling, we could fetch them on demand
-			err = pullSnapshotWithChildren(co.S3gitSnapshot, client)
+			err = cacheKeysInKV([]string{co.S3gitSnapshot}, kv.SNAPSHOT)
 			if err != nil {
 				return err
 			}
@@ -227,7 +226,7 @@ const treeBatchSize = 0x4000
 
 // Just cache the key for BLOBs, content will be pulled down later when needed
 // For performance do not write per key to the KV but write in larger batches
-func cacheKeysForBlobs(added []string) error {
+func cacheKeysInKV(added []string, objType string) error {
 
 	// Create arrays to be able to batch the operation
 	keys := make([][]byte, 0, treeBatchSize)
@@ -241,7 +240,7 @@ func cacheKeysForBlobs(added []string) error {
 		values = append(values, nil)
 
 		if len(keys) == cap(keys) {
-			err := kv.AddMultiToLevel1(keys, values, kv.BLOB)
+			err := kv.AddMultiToLevel1(keys, values, objType)
 			if err != nil {
 				return err
 			}
@@ -253,7 +252,7 @@ func cacheKeysForBlobs(added []string) error {
 	}
 
 	if len(keys) > 0 {
-		err := kv.AddMultiToLevel1(keys, values, kv.BLOB)
+		err := kv.AddMultiToLevel1(keys, values, objType)
 		if err != nil {
 			return err
 		}
