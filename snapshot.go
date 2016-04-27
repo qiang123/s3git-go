@@ -28,6 +28,7 @@ import (
 	"io"
 	"errors"
 	"encoding/hex"
+	"sync"
 )
 
 // Create a snapshot for the repository
@@ -259,5 +260,86 @@ func getSnapshotFromCommit(commit string) (string, error) {
 		return "", errors.New(fmt.Sprintf("Commit %s does not contain snapshot", commit))
 	}
 
+	b, _ := hex.DecodeString(co.S3gitSnapshot)
+	leafHashes, _, err := kv.GetLevel1(b)
+	if err != nil {
+		return "", err
+	}
+
+	// Has snapshot not yet been pulled down to disk?
+	if len(leafHashes) == 0 {
+		client, err := backend.GetDefaultClient()
+		if err != nil {
+			return "", err
+		}
+
+		err = pullSnapshotWithChildren(co.S3gitSnapshot, client)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	return co.S3gitSnapshot, nil
+}
+
+func pullSnapshotWithChildren(hash string, client backend.Backend) error {
+
+	const pullSnapshotRoutines = 100
+
+	var wg sync.WaitGroup
+	var msgs = make(chan string, pullSnapshotRoutines*2)
+	var results = make(chan error, pullSnapshotRoutines*2)
+
+	for i := 0; i < pullSnapshotRoutines; i++ {
+
+		go func() {
+			for hash := range msgs {
+
+				//fmt.Println("Pull snapshot", hash)
+				// Now pull down snapshot object
+				snapshotName, snapshotBytes, err := fetchBlobTempFileAndContents(hash, client)
+				if err != nil {
+					//return err
+				}
+				defer os.Remove(snapshotName)
+
+				so, err := core.GetSnapshotObjectFromString(string(snapshotBytes))
+
+				for _, entry := range so.S3gitEntries {
+					if entry.IsDirectory() {
+						//fmt.Println("wg.Add for", entry.Blob)
+						wg.Add(1)
+						msgs <- entry.Blob
+					}
+				}
+
+				// Add snapshot object to cas
+				_, err = cas.StoreBlobInCache(snapshotName, kv.SNAPSHOT)
+				if err != nil {
+					//return err
+				}
+
+				//fmt.Println("wg.Done for", hash)
+				wg.Done()
+			}
+		}()
+	}
+
+	wg.Add(1)
+	msgs <- hash
+
+	go func() {
+		wg.Wait()
+		close(msgs)
+		close(results)
+	}()
+
+	var err error
+	for e := range results {
+		if e != nil {
+			err = e
+		}
+	}
+
+	return err
 }
