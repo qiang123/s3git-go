@@ -180,31 +180,6 @@ func fetchPrefix(prefix string, client backend.Backend) error {
 	return nil
 }
 
-func pullSnapshotWithChildren(hash string, client backend.Backend) error {
-
-	// Now pull down snapshot object
-	snapshotName, snapshotBytes, err := fetchBlobTempFileAndContents(hash, client)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(snapshotName)
-
-	so, err := core.GetSnapshotObjectFromString(string(snapshotBytes))
-
-	for _, entry := range so.S3gitEntries {
-		if entry.IsDirectory() {
-			err = pullSnapshotWithChildren(entry.Blob, client)
-		}
-	}
-
-	// Add snapshot object to cas
-	_, err = cas.StoreBlobInCache(snapshotName, kv.SNAPSHOT)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 // Fetch blob down to temp file along with contents
 func fetchBlobTempFileAndContents(prefix string, client backend.Backend) (tempFile string, contents []byte, err error) {
