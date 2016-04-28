@@ -142,6 +142,8 @@ func push(prefixChan <-chan []byte, hydrated bool, progress func(maxTicks int64)
 
 func pushSnapshotWithChildren(hash string, client backend.Backend) error {
 
+	// TODO: [perf] Push snapshot objects in parallel
+
 	// Get snapshot object
 	so, err := core.GetSnapshotObject(hash)
 	if err != nil {
