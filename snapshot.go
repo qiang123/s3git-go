@@ -78,7 +78,8 @@ func (repo Repository) SnapshotCheckout(path, commit string, dedupe bool) error 
 	fWriteHydrate := func(hash, filename string, mode os.FileMode) {
 
 		// Compute hash in order to prevent rewriting the content when file already exists
-		if _, err := os.Stat(filename); err == nil {
+		// TODO: Skip for now as slows down checkout (leaking go routine??)
+		if _, err := os.Stat(filename); false && err == nil {
 
 			digest, err := cas.Sum(filename)
 			if err != nil {
