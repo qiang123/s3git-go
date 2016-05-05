@@ -212,7 +212,7 @@ func (repo Repository) SnapshotStatus(path, commit string) error {
 
 func getSnapshotFromCommit(commit string) (string, error) {
 
-	if commit == "" {	// Unspecified, so default to last commit
+	if commit == "" || commit == "HEAD" || commit == "HEAD^" {	// Unspecified, so default to last commit
 		commits, err := kv.ListTopMostCommits()
 		if err != nil {
 			return "", err
@@ -222,7 +222,20 @@ func getSnapshotFromCommit(commit string) (string, error) {
 			parents = append(parents, hex.EncodeToString(c))
 		}
 		if len(parents) == 1 {
-			commit = parents[0]
+
+			if commit == "HEAD^" {
+				// TODO: Refactor and make generic
+				co, err := core.GetCommitObject(parents[0])
+				if err != nil {
+					return "", err
+				}
+				if len(co.S3gitWarmParents) > 1 {
+					return "", errors.New("More than one grand parent found for HEAD^")
+				}
+				commit = co.S3gitWarmParents[0]
+			} else {
+				commit = parents[0]
+			}
 		} else {
 			// TODO: Do extra check whether the trees are the same, in that case we can safely ignore the warning
 			return "", errors.New("Multiple top most commits founds as parents")
