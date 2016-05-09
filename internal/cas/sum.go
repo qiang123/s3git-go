@@ -66,7 +66,7 @@ func calcStream(r io.Reader, fileSize int64) (digest []byte, err error) {
 
 	// Start one go routine per CPU
 	// TODO: Get nr of cpus
-	for i := 0; i < 8; /**cpu*/ i++ {
+	for i := 0; i < 1; /**cpu*/ i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
