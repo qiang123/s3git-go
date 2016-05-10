@@ -58,6 +58,7 @@ func (repo Repository) commit(message, branch, snapshot string, parents []string
 		}
 		if len(warmParents) > 1 {
 			// TODO: Do extra check whether the trees are the same, in that case we can safely ignore the warning
+			// TODO: Consider doing Merkle tree kind of check on list of blobs
 			return "", false, errors.New("Multiple top most commits founds as parents")
 		}
 	} else {
