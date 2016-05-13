@@ -1,0 +1,15 @@
+language: go
+
+sudo: false
+
+os:
+  - osx
+
+go:
+  - 1.6
+
+install:
+ - go get -t ./...
+
+script:
+ - go test -v ./...
