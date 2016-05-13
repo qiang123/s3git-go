@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func main() {
+func change_and_push_main() {
 
 	dir, _ := ioutil.TempDir("", "s3git")
 
