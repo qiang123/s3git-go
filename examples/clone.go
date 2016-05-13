@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 )
 
-func create_main() {
+func clone_main() {
 
 	dir, _ := ioutil.TempDir("", "s3git")
 
