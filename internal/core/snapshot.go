@@ -74,6 +74,11 @@ func StoreSnapshotObject(path string, addFn func(filename string) (string, error
 
 func SnapshotCheckout(path, hash string, fWrite func(hash, filename string, perm os.FileMode)) error {
 
+	err := warmCacheForCheckout(hash)
+	if err != nil {
+		return err
+	}
+
 	return iterateSnapshots(hash, path, func(entry SnapshotEntry, base string) {
 
 		perm, _ := strconv.ParseUint(entry.Mode[3:len(entry.Mode)], 8, 0)
