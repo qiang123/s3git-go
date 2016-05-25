@@ -116,9 +116,9 @@ func HackFor100mBucket(hash string) backend.Backend {
 	secretKey100mRestrictedPolicy := "ltodRT/S6umqzrRp0O85vgaj4Kh2pIq0anFuEc+X"
 
 	var client backend.Backend
-	if config.Config.Remotes[0].S3Bucket == "s3git-100m" ||
+	if len(config.Config.Remotes) > 0 && (config.Config.Remotes[0].S3Bucket == "s3git-100m" ||
 	config.Config.Remotes[0].S3Bucket == "s3git-100m-euc1-objs" ||
-	config.Config.Remotes[0].S3Bucket == "s3git-100m-euc1-json" {
+	config.Config.Remotes[0].S3Bucket == "s3git-100m-euc1-json") {
 
 		client = s3.MakeClient(config.RemoteObject{S3Bucket: "lifedrive-100m-usw2", S3Region: "us-west-2",
 			S3AccessKey: accessKey100mRestrictedPolicy, S3SecretKey: secretKey100mRestrictedPolicy})
