@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/s3git/s3git-go/internal/cas"
+	"github.com/s3git/s3git-go/internal/config"
 	"github.com/s3git/s3git-go/internal/kv"
 	"io"
 	"os"
@@ -109,6 +110,9 @@ func SnapshotCheckout(path, hash string, fWrite func(hash, filename string, perm
 // Warm the cache for a given snapshot by pulling blobs in parallel
 func warmCacheForCheckout(hash string) error {
 
+	if len(config.Config.Remotes) == 0 {
+		return nil
+	}
 	const pullBlobsRoutines = 50
 
 	var wgDirs, wgBlobs sync.WaitGroup
